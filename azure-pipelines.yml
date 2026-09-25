@@ -1,0 +1,33 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - ClinicWorks-Backend/*
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.13'
+  displayName: 'Use Python 3.13'
+
+- script: |
+    cd ClinicWorks-Backend
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Install backend dependencies'
+
+- script: |
+    cd ClinicWorks-Backend
+    pytest
+  displayName: 'Run backend tests'
