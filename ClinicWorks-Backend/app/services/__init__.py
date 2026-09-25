@@ -1,0 +1,1 @@
+# Service layer for the application. This package contains various service modules that encapsulate business logic and interact with the data layer. Each service module is responsible for a specific domain or functionality within the application, promoting separation of concerns and maintainability.

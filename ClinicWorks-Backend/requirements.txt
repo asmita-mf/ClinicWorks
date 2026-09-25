@@ -1,0 +1,26 @@
+# FastAPI
+fastapi==0.141.1
+uvicorn==0.53.0
+gunicorn==26.2.0
+python-multipart==0.0.32
+
+# Database
+SQLAlchemy==2.0.54
+psycopg2-binary==2.9.13
+
+# Azure
+azure-ai-documentintelligence==1.0.2
+azure-core==1.41.0
+azure-identity==1.25.3
+azure-storage-blob==12.30.2
+
+# AI / LLM
+groq==1.7.0
+openai==3.15.0
+
+# HTTP / API calls
+requests==2.34.2
+httpx==0.28.1
+
+# Configuration
+python-dotenv==1.2.3

@@ -1,0 +1,1 @@
+# API layer for the application. This package contains various API modules that handle incoming requests, process them, and return appropriate responses. Each API module is responsible for a specific set of endpoints or resources, promoting modularity and ease of maintenance.
