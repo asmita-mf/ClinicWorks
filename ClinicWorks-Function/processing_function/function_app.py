@@ -3,7 +3,7 @@ import azure.functions as func
 from services.blob_service import download_file, get_blob_url
 from services.document_intelligence import analyze_document
 from services.groq_service import extract_clinical_measurements
-from services.database_service import save_processed_document
+# from services.database_service import save_processed_document
 # from services.business_rules import (
 #     select_blood_pressure,
 #     select_hba1c,
