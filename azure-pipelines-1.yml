@@ -25,3 +25,20 @@ steps:
     python -m pip install --upgrade pip
     pip install -r processing_function/requirements.txt
   displayName: 'Install Function dependencies'
+
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(Build.SourcesDirectory)/ClinicWorks-Function'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/function.zip'
+    replaceExistingArchive: true
+  displayName: 'Package function'
+
+- task: AzureFunctionApp@2
+  inputs:
+    azureSubscription: 'sc-clinicworks-azure'
+    appType: 'functionAppLinux'
+    appName: 'rg-clinicworks-function-dev'
+    package: '$(Build.ArtifactStagingDirectory)/function.zip'
+  displayName: 'Deploy function to Azure Function App'
