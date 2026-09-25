@@ -2,7 +2,7 @@ import azure.functions as func
 
 from services.blob_service import download_file, get_blob_url
 from services.document_intelligence import analyze_document
-# from services.groq_service import extract_clinical_measurements
+from services.groq_service import extract_clinical_measurements
 # from services.database_service import save_processed_document
 # from services.business_rules import (
 #     select_blood_pressure,
@@ -22,6 +22,6 @@ app = func.FunctionApp(
 )
 def process_document(req: func.HttpRequest) -> func.HttpResponse:
     return func.HttpResponse(
-        "Function discovery test successful analyze_document is required",
+        "Function discovery test successful clinical is required",
         status_code=200
     )
