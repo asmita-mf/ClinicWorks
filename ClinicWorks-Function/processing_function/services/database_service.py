@@ -3,27 +3,28 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from models.document_model import Base, ProcessedDocument
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL is not set")
+from models.document_model import ProcessedDocument
 
 
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,
-)
+def get_session():
+    database_url = os.getenv("DATABASE_URL")
 
-# Base.metadata.create_all(bind=engine)
+    if not database_url:
+        raise ValueError("DATABASE_URL is not set")
 
+    engine = create_engine(
+        database_url,
+        pool_pre_ping=True,
+    )
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine,
-)
+    SessionLocal = sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=engine,
+    )
+
+    return SessionLocal()
+
 
 def save_processed_document(
     filename: str,
@@ -38,7 +39,7 @@ def save_processed_document(
 ):
     print("Connecting to PostgreSQL...")
 
-    db = SessionLocal()
+    db = get_session()
 
     print("PostgreSQL session created")
 
