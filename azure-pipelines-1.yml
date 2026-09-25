@@ -1,0 +1,49 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - ClinicWorks-Function/**
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.12'
+  displayName: 'Use Python 3.12'
+
+- script: |
+    cd ClinicWorks-Function/processing_function
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+  displayName: 'Install Function dependencies'
+
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(Build.SourcesDirectory)/ClinicWorks-Function/processing_function/'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/function.zip'
+    replaceExistingArchive: true
+  displayName: 'Package function'
+
+- script: |
+    echo "===== Function ZIP Contents ====="
+    unzip -l "$(Build.ArtifactStagingDirectory)/function.zip"
+  displayName: 'Verify function ZIP contents'
+  
+- task: AzureFunctionApp@2
+  inputs:
+    azureSubscription: 'sc-clinicworks-azure'
+    appType: 'functionAppLinux'
+    appName: 'fn-clinicworks-dev-processing-001'
+    package: '$(Build.ArtifactStagingDirectory)/function.zip'
+  displayName: 'Deploy function to Azure Function App'

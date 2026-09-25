@@ -1,0 +1,45 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - ClinicWorks-Backend/**
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.13'
+  displayName: 'Use Python 3.13'
+
+- script: |
+    cd ClinicWorks-Backend
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Install backend dependencies'
+
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(Build.SourcesDirectory)/ClinicWorks-Backend'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/backend.zip'
+    replaceExistingArchive: true
+  displayName: 'Package backend'
+
+- task: AzureWebApp@1
+  inputs:
+    azureSubscription: 'sc-clinicworks-azure'
+    appType: 'webAppLinux'
+    appName: 'app-clinicworks-api-dev-ci-001'
+    package: '$(Build.ArtifactStagingDirectory)/backend.zip'
+  displayName: 'Deploy backend to Azure Web App'
