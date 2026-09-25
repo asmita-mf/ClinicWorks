@@ -28,7 +28,7 @@ steps:
 
 - task: ArchiveFiles@2
   inputs:
-    rootFolderOrFile: '$(Build.SourcesDirectory)/ClinicWorks-Function/processing_function/'
+    rootFolderOrFile: '$(Build.SourcesDirectory)/ClinicWorks-Function/processing_function'
     includeRootFolder: false
     archiveType: 'zip'
     archiveFile: '$(Build.ArtifactStagingDirectory)/function.zip'
