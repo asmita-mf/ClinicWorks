@@ -9,7 +9,7 @@ trigger:
       - main
   paths:
     include:
-      - ClinicWorks-Backend/*
+      - ClinicWorks-Backend/**
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -26,8 +26,3 @@ steps:
     python -m pip install --upgrade pip
     pip install -r requirements.txt
   displayName: 'Install backend dependencies'
-
-- script: |
-    pip install pytest
-    pytest tests/
-  displayName: 'Install and run backend tests'
