@@ -1,0 +1,49 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - ClinicWorks-Frontend/**
+
+pool:
+  vmImage: "ubuntu-latest"
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.13"
+    displayName: "Use Python 3.13"
+
+  - script: |
+      cd ClinicWorks-Frontend
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+    displayName: "Install frontend dependencies"
+
+  - script: |
+      cd ClinicWorks-Frontend
+      python -m py_compile app/main.py
+    displayName: "Validate frontend code"
+
+  - task: ArchiveFiles@2
+    inputs:
+      rootFolderOrFile: "$(Build.SourcesDirectory)/ClinicWorks-Frontend"
+      includeRootFolder: false
+      archiveType: "zip"
+      archiveFile: "$(Build.ArtifactStagingDirectory)/frontend.zip"
+      replaceExistingArchive: true
+    displayName: "Package frontend"
+
+  - script: |
+      echo "===== Frontend ZIP Contents ====="
+      unzip -l "$(Build.ArtifactStagingDirectory)/frontend.zip"
+    displayName: "Verify frontend ZIP contents"
+
+  - task: AzureWebApp@1
+    inputs:
+      azureSubscription: "sc-clinicworks-azure"
+      appType: "webAppLinux"
+      appName: "app-clinicworks-ui-dev-ci-001"
+      package: "$(Build.ArtifactStagingDirectory)/frontend.zip"
+    displayName: "Deploy frontend to Azure Web App"
