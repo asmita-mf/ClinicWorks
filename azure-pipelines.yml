@@ -28,7 +28,6 @@ steps:
   displayName: 'Install backend dependencies'
 
 - script: |
-    cd ClinicWorks-Backend
     pip install pytest
-    pytest
+    pytest tests/
   displayName: 'Install and run backend tests'
