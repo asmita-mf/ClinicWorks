@@ -39,6 +39,6 @@ steps:
   inputs:
     azureSubscription: 'sc-clinicworks-azure'
     appType: 'functionAppLinux'
-    appName: 'rg-clinicworks-function-dev'
+    appName: 'fn-clinicworks-dev-processing-001'
     package: '$(Build.ArtifactStagingDirectory)/function.zip'
   displayName: 'Deploy function to Azure Function App'
