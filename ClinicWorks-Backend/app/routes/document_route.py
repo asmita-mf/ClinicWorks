@@ -80,3 +80,76 @@ async def upload_document(file: UploadFile = File(...)):
         "status": "processing",
         "logic_app_status": response.status_code,
     }
+
+@router.post("/{document_id}/retry")
+async def retry_document_processing(
+    document_id: str,
+    db: Session = Depends(get_db)
+):
+
+    # ---------------------------------------------------------
+    # 1. Find the document in PostgreSQL
+    # ---------------------------------------------------------
+
+    document = (
+        db.query(ProcessedDocument)
+        .filter(ProcessedDocument.id == document_id)
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Document with ID {document_id} not found."
+        )
+
+
+    # ---------------------------------------------------------
+    # 2. Get the blob/file name
+    # ---------------------------------------------------------
+
+    blob_name = document.filename
+
+    if not blob_name:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No filename found for document ID {document_id}."
+        )
+
+
+    # ---------------------------------------------------------
+    # 3. Trigger Logic App
+    # ---------------------------------------------------------
+
+    payload = {
+        "blob_name": blob_name
+    }
+
+    try:
+
+        response = requests.post(
+            LOGIC_APP_URL,
+            json=payload,
+            timeout=30
+        )
+
+        response.raise_for_status()
+
+    except requests.RequestException as exc:
+
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to trigger Logic App: {str(exc)}"
+        )
+
+
+    # ---------------------------------------------------------
+    # 4. Return response to frontend
+    # ---------------------------------------------------------
+
+    return {
+        "message": "Document retry processing has been triggered successfully.",
+        "document_id": document_id,
+        "blob_name": blob_name,
+        "status": "retry_triggered"
+    }
