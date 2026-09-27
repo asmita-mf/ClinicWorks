@@ -3,5 +3,5 @@ azure-identity
 azure-storage-blob
 azure-ai-documentintelligence
 groq==1.7.0
-psycopg2-binary
+psycopg[binary]
 sqlalchemy
