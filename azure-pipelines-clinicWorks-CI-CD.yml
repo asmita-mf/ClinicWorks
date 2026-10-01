@@ -13,10 +13,19 @@ pool:
   vmImage: "ubuntu-latest"
 
 variables:
-  azureServiceConnection: "sc-clinicworks-azure"
-  resourceGroupName: "rg-clinicworks-dev-ci"
-  bicepTemplate: "ClinicWorks-IAC/main.bicep"
-  bicepParameters: "ClinicWorks-IAC/parameters/dev.bicepparam"
+  - group: clinicworks-dev-secrets
+
+  - name: azureServiceConnection
+    value: "sc-clinicworks-azure"
+
+  - name: resourceGroupName
+    value: "rg-clinicworks-dev-ci"
+
+  - name: bicepTemplate
+    value: "ClinicWorks-IAC/main.bicep"
+
+  - name: bicepParameters
+    value: "ClinicWorks-IAC/parameters/dev.bicepparam"
 
 stages:
   # ============================================================
@@ -68,7 +77,8 @@ stages:
                 az deployment group validate \
                   --resource-group $(resourceGroupName) \
                   --template-file $(bicepTemplate) \
-                  --parameters $(bicepParameters)
+                  --parameters $(bicepParameters) \
+                  --parameters postgresAdminPassword="$(postgresAdminPassword)"
 
   # ============================================================
   # BICEP WHAT-IF
@@ -95,7 +105,36 @@ stages:
                 az deployment group what-if \
                   --resource-group $(resourceGroupName) \
                   --template-file $(bicepTemplate) \
-                  --parameters $(bicepParameters)
+                  --parameters $(bicepParameters) \
+                  --parameters postgresAdminPassword="$(postgresAdminPassword)"
+
+  # ============================================================
+  # BICEP DEPLOY
+  # ============================================================
+
+  - stage: Bicep_Deploy
+    displayName: "Bicep - Deploy Infrastructure"
+    dependsOn: Bicep_WhatIf
+
+    jobs:
+      - job: DeployBicep
+        displayName: "Deploy Bicep Infrastructure"
+
+        steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: "Deploy Bicep Infrastructure"
+            inputs:
+              azureSubscription: "$(azureServiceConnection)"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              inlineScript: |
+                az deployment group create \
+                  --resource-group $(resourceGroupName) \
+                  --template-file $(bicepTemplate) \
+                  --parameters $(bicepParameters) \
+                  --parameters postgresAdminPassword="$(postgresAdminPassword)"
 
   # ============================================================
   # BACKEND
@@ -103,7 +142,7 @@ stages:
 
   - stage: Backend
     displayName: "Backend - Build & Deploy"
-    dependsOn: Bicep_WhatIf
+    dependsOn: Bicep_Deploy
 
     jobs:
       - job: DeployBackend
@@ -134,7 +173,7 @@ stages:
             inputs:
               azureSubscription: "$(azureServiceConnection)"
               appType: "webAppLinux"
-              appName: "app-clinicworks-api-dev-ci-001"
+              appName: "app-clinicworks-api-dev-ci-002"
               package: "$(Build.ArtifactStagingDirectory)/backend.zip"
             displayName: "Deploy backend to Azure Web App"
 
@@ -144,7 +183,7 @@ stages:
 
   - stage: Function
     displayName: "Function - Build & Deploy"
-    dependsOn: Bicep_WhatIf
+    dependsOn: Bicep_Deploy
 
     jobs:
       - job: DeployFunction
@@ -180,7 +219,7 @@ stages:
             inputs:
               azureSubscription: "$(azureServiceConnection)"
               appType: "functionAppLinux"
-              appName: "fn-clinicworks-dev-processing-001"
+              appName: "fn-clinicworks-processing-dev-ci-002"
               package: "$(Build.ArtifactStagingDirectory)/function.zip"
             displayName: "Deploy function to Azure Function App"
 
@@ -190,7 +229,7 @@ stages:
 
   - stage: Frontend
     displayName: "Frontend - Build & Deploy"
-    dependsOn: Bicep_WhatIf
+    dependsOn: Bicep_Deploy
 
     jobs:
       - job: DeployFrontend
@@ -231,6 +270,6 @@ stages:
             inputs:
               azureSubscription: "$(azureServiceConnection)"
               appType: "webAppLinux"
-              appName: "app-clinicworks-ui-dev-ci-001"
+              appName: "app-clinicworks-ui-dev-ci-002"
               package: "$(Build.ArtifactStagingDirectory)/frontend.zip"
             displayName: "Deploy frontend to Azure Web App"
