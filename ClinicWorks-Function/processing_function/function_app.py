@@ -16,8 +16,11 @@ from services.business_rules import (
 
 logger = logging.getLogger(__name__)
 
+# app = func.FunctionApp(
+#     http_auth_level=func.AuthLevel.FUNCTION
+# )
 app = func.FunctionApp(
-    http_auth_level=func.AuthLevel.FUNCTION
+    http_auth_level=func.AuthLevel.ANONYMOUS
 )
 
 

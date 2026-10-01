@@ -1,0 +1,148 @@
+@description('Name of the Function App')
+param functionAppName string
+
+@description('Name of the App Service Plan')
+param appServicePlanName string
+
+@description('Azure region')
+param location string
+
+@description('Common resource tags')
+param tags object
+
+@description('Application Insights connection string')
+param appInsightsConnectionString string
+
+@description('Resource ID of the subnet used for Function App VNet integration')
+param integrationSubnetResourceId string
+
+@description('Client ID of the Entra application representing the Function API')
+param functionApiClientId string
+
+@description('Identifier URI of the Entra application representing the Function API')
+param functionApiIdentifierUri string
+
+@description('Principal ID of the Logic App managed identity')
+param logicAppPrincipalId string
+
+// --------------------------------------------------
+// App Service Plan
+// --------------------------------------------------
+
+resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
+  name: appServicePlanName
+  location: location
+
+  tags: tags
+
+  sku: {
+    name: 'B1'
+  }
+
+  kind: 'linux'
+
+  properties: {
+    reserved: true
+  }
+}
+
+
+// --------------------------------------------------
+// Function App
+// --------------------------------------------------
+
+resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
+  name: functionAppName
+
+  location: location
+
+  kind: 'functionapp,linux'
+
+  tags: tags
+
+  identity: {
+    type: 'SystemAssigned'
+  }
+
+  properties: {
+    serverFarmId: appServicePlan.id
+
+    siteConfig: {
+      linuxFxVersion: 'Python|3.12'
+
+      appSettings: [
+        {
+        name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+        value: appInsightsConnectionString
+        }
+      ]
+    }
+  }
+}
+
+resource functionAppVnetIntegration 'Microsoft.Web/sites/networkConfig@2025-03-01' = {
+  name: 'virtualNetwork'
+  parent: functionApp
+
+  properties: {
+    subnetResourceId: integrationSubnetResourceId
+    swiftSupported: true
+  }
+}
+
+// --------------------------------------------------
+// App Service Authentication / Entra ID
+// --------------------------------------------------
+
+resource functionAuth 'Microsoft.Web/sites/config@2022-09-01' = {
+  name: 'authsettingsV2'
+  parent: functionApp
+
+  properties: {
+    platform: {
+      enabled: true
+    }
+
+    globalValidation: {
+      requireAuthentication: true
+      unauthenticatedClientAction: 'Return401'
+    }
+
+    identityProviders: {
+      azureActiveDirectory: {
+        enabled: true
+
+        registration: {
+          clientId: functionApiClientId
+          openIdIssuer: '${environment().authentication.loginEndpoint}${subscription().tenantId}/v2.0'
+        }
+
+        validation: {
+          allowedAudiences: [
+            functionApiClientId
+            functionApiIdentifierUri
+          ]
+          defaultAuthorizationPolicy: {
+            allowedPrincipals: {
+              identities: [
+                logicAppPrincipalId
+              ]
+            }
+          }
+        }
+      }
+    }
+
+    httpSettings: {
+      requireHttps: true
+    }
+  }
+}
+
+// --------------------------------------------------
+// Output
+// --------------------------------------------------
+
+output functionAppName string = functionApp.name
+
+output functionPrincipalId string = functionApp.identity.principalId

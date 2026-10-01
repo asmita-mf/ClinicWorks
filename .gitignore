@@ -35,3 +35,9 @@ build/
 
 #Remove zip
 *.zip
+
+# Bicep generated ARM JSON files
+ClinicWorks-IAC/**/*.json
+
+# Keep Bicep configuration
+!ClinicWorks-IAC/bicepconfig.json

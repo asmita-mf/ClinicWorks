@@ -1,0 +1,30 @@
+@description('Name of the Private DNS Zone')
+param zoneName string
+
+@description('Common resource tags')
+param tags object
+
+@description('Resource ID of the Virtual Network')
+param vnetResourceId string
+
+resource privateDnsZone 'Microsoft.Network/privateDnsZones@2024-06-01' = {
+  name: zoneName
+  location: 'global'
+  tags: tags
+}
+
+resource privateDnsZoneVnetLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2024-06-01' = {
+  name: 'clinicworks-vnet-link'
+  parent: privateDnsZone
+
+  properties: {
+    registrationEnabled: false
+
+    virtualNetwork: {
+      id: vnetResourceId
+    }
+  }
+}
+
+output privateDnsZoneName string = privateDnsZone.name
+output privateDnsZoneId string = privateDnsZone.id
