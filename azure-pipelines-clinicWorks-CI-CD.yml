@@ -1,0 +1,236 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - ClinicWorks-IAC/**
+      - ClinicWorks-Backend/**
+      - ClinicWorks-Function/**
+      - ClinicWorks-Frontend/**
+
+pool:
+  vmImage: "ubuntu-latest"
+
+variables:
+  azureServiceConnection: "sc-clinicworks-azure"
+  resourceGroupName: "rg-clinicworks-dev-ci"
+  bicepTemplate: "ClinicWorks-IAC/main.bicep"
+  bicepParameters: "ClinicWorks-IAC/parameters/dev.bicepparam"
+
+stages:
+  # ============================================================
+  # BICEP BUILD
+  # ============================================================
+
+  - stage: Bicep_Build
+    displayName: "Bicep - Build"
+
+    jobs:
+      - job: BuildBicep
+        displayName: "Build Bicep"
+
+        steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: "Build Bicep"
+            inputs:
+              azureSubscription: "$(azureServiceConnection)"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              inlineScript: |
+                az bicep build \
+                  --file $(bicepTemplate)
+
+  # ============================================================
+  # BICEP VALIDATE
+  # ============================================================
+
+  - stage: Bicep_Validate
+    displayName: "Bicep - Validate"
+    dependsOn: Bicep_Build
+
+    jobs:
+      - job: ValidateBicep
+        displayName: "Validate Bicep Deployment"
+
+        steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: "Validate Bicep"
+            inputs:
+              azureSubscription: "$(azureServiceConnection)"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              inlineScript: |
+                az deployment group validate \
+                  --resource-group $(resourceGroupName) \
+                  --template-file $(bicepTemplate) \
+                  --parameters $(bicepParameters)
+
+  # ============================================================
+  # BICEP WHAT-IF
+  # ============================================================
+
+  - stage: Bicep_WhatIf
+    displayName: "Bicep - What-If"
+    dependsOn: Bicep_Validate
+
+    jobs:
+      - job: WhatIfBicep
+        displayName: "Run Bicep What-If"
+
+        steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: "Bicep What-If"
+            inputs:
+              azureSubscription: "$(azureServiceConnection)"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              inlineScript: |
+                az deployment group what-if \
+                  --resource-group $(resourceGroupName) \
+                  --template-file $(bicepTemplate) \
+                  --parameters $(bicepParameters)
+
+  # ============================================================
+  # BACKEND
+  # ============================================================
+
+  - stage: Backend
+    displayName: "Backend - Build & Deploy"
+    dependsOn: Bicep_WhatIf
+
+    jobs:
+      - job: DeployBackend
+        displayName: "Deploy Backend"
+
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "3.13"
+            displayName: "Use Python 3.13"
+
+          - script: |
+              cd ClinicWorks-Backend
+              python -m pip install --upgrade pip
+              pip install -r requirements.txt
+            displayName: "Install backend dependencies"
+
+          - task: ArchiveFiles@2
+            inputs:
+              rootFolderOrFile: "$(Build.SourcesDirectory)/ClinicWorks-Backend"
+              includeRootFolder: false
+              archiveType: "zip"
+              archiveFile: "$(Build.ArtifactStagingDirectory)/backend.zip"
+              replaceExistingArchive: true
+            displayName: "Package backend"
+
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: "$(azureServiceConnection)"
+              appType: "webAppLinux"
+              appName: "app-clinicworks-api-dev-ci-001"
+              package: "$(Build.ArtifactStagingDirectory)/backend.zip"
+            displayName: "Deploy backend to Azure Web App"
+
+  # ============================================================
+  # FUNCTION
+  # ============================================================
+
+  - stage: Function
+    displayName: "Function - Build & Deploy"
+    dependsOn: Backend
+
+    jobs:
+      - job: DeployFunction
+        displayName: "Deploy Function"
+
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "3.12"
+            displayName: "Use Python 3.12"
+
+          - script: |
+              cd ClinicWorks-Function/processing_function
+              python -m pip install --upgrade pip
+              pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+            displayName: "Install Function dependencies"
+
+          - task: ArchiveFiles@2
+            inputs:
+              rootFolderOrFile: "$(Build.SourcesDirectory)/ClinicWorks-Function/processing_function/"
+              includeRootFolder: false
+              archiveType: "zip"
+              archiveFile: "$(Build.ArtifactStagingDirectory)/function.zip"
+              replaceExistingArchive: true
+            displayName: "Package function"
+
+          - script: |
+              echo "===== Function ZIP Contents ====="
+              unzip -l "$(Build.ArtifactStagingDirectory)/function.zip"
+            displayName: "Verify function ZIP contents"
+
+          - task: AzureFunctionApp@2
+            inputs:
+              azureSubscription: "$(azureServiceConnection)"
+              appType: "functionAppLinux"
+              appName: "fn-clinicworks-dev-processing-001"
+              package: "$(Build.ArtifactStagingDirectory)/function.zip"
+            displayName: "Deploy function to Azure Function App"
+
+  # ============================================================
+  # FRONTEND
+  # ============================================================
+
+  - stage: Frontend
+    displayName: "Frontend - Build & Deploy"
+    dependsOn: Function
+
+    jobs:
+      - job: DeployFrontend
+        displayName: "Deploy Frontend"
+
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "3.13"
+            displayName: "Use Python 3.13"
+
+          - script: |
+              cd ClinicWorks-Frontend
+              python -m pip install --upgrade pip
+              pip install -r requirements.txt
+            displayName: "Install frontend dependencies"
+
+          - script: |
+              cd ClinicWorks-Frontend
+              python -m py_compile app/main.py
+            displayName: "Validate frontend code"
+
+          - task: ArchiveFiles@2
+            inputs:
+              rootFolderOrFile: "$(Build.SourcesDirectory)/ClinicWorks-Frontend"
+              includeRootFolder: false
+              archiveType: "zip"
+              archiveFile: "$(Build.ArtifactStagingDirectory)/frontend.zip"
+              replaceExistingArchive: true
+            displayName: "Package frontend"
+
+          - script: |
+              echo "===== Frontend ZIP Contents ====="
+              unzip -l "$(Build.ArtifactStagingDirectory)/frontend.zip"
+            displayName: "Verify frontend ZIP contents"
+
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: "$(azureServiceConnection)"
+              appType: "webAppLinux"
+              appName: "app-clinicworks-ui-dev-ci-001"
+              package: "$(Build.ArtifactStagingDirectory)/frontend.zip"
+            displayName: "Deploy frontend to Azure Web App"
