@@ -1,5 +1,8 @@
-@description('Name of the App Service')
-param appServiceName string
+@description('Name of the backend App Service')
+param backendAppServiceName string
+
+@description('Name of the frontend App Service')
+param frontendAppServiceName string
 
 @description('Name of the App Service Plan')
 param appServicePlanName string
@@ -19,6 +22,11 @@ param appInsightsConnectionString string
 @description('Resource ID of the subnet used for App Service VNet integration')
 param integrationSubnetResourceId string
 
+
+// --------------------------------------------------
+// App Service Plan
+// --------------------------------------------------
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: appServicePlanName
   location: location
@@ -37,8 +45,12 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
 }
 
 
-resource appService 'Microsoft.Web/sites@2024-04-01' = {
-  name: appServiceName
+// --------------------------------------------------
+// Backend App Service - FastAPI
+// --------------------------------------------------
+
+resource backendAppService 'Microsoft.Web/sites@2024-04-01' = {
+  name: backendAppServiceName
   location: location
 
   tags: tags
@@ -49,21 +61,28 @@ resource appService 'Microsoft.Web/sites@2024-04-01' = {
     serverFarmId: appServicePlan.id
 
     siteConfig: {
-        linuxFxVersion: 'PYTHON|3.12'
+      linuxFxVersion: 'PYTHON|3.12'
 
-        appSettings: [
-            {
-            name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-            value: appInsightsConnectionString
-            }
-        ]
+      appCommandLine: 'gunicorn -k uvicorn.workers.UvicornWorker app.main:app'
+
+      appSettings: [
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: appInsightsConnectionString
+        }
+      ]
     }
   }
 }
 
-resource appServiceVnetIntegration 'Microsoft.Web/sites/networkConfig@2025-03-01' = {
+
+// --------------------------------------------------
+// Backend VNet Integration
+// --------------------------------------------------
+
+resource backendAppServiceVnetIntegration 'Microsoft.Web/sites/networkConfig@2025-03-01' = {
   name: 'virtualNetwork'
-  parent: appService
+  parent: backendAppService
 
   properties: {
     subnetResourceId: integrationSubnetResourceId
@@ -71,6 +90,59 @@ resource appServiceVnetIntegration 'Microsoft.Web/sites/networkConfig@2025-03-01
   }
 }
 
-output appServiceName string = appService.name
+
+// --------------------------------------------------
+// Frontend App Service - Streamlit
+// --------------------------------------------------
+
+resource frontendAppService 'Microsoft.Web/sites@2024-04-01' = {
+  name: frontendAppServiceName
+  location: location
+
+  tags: tags
+
+  kind: 'app,linux'
+
+  properties: {
+    serverFarmId: appServicePlan.id
+
+    siteConfig: {
+      linuxFxVersion: 'PYTHON|3.12'
+
+      appCommandLine: 'python -m streamlit run app/main.py --server.address=0.0.0.0 --server.port=8000'
+
+      appSettings: [
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: appInsightsConnectionString
+        }
+      ]
+    }
+  }
+}
+
+
+// --------------------------------------------------
+// Frontend VNet Integration
+// --------------------------------------------------
+
+resource frontendAppServiceVnetIntegration 'Microsoft.Web/sites/networkConfig@2025-03-01' = {
+  name: 'virtualNetwork'
+  parent: frontendAppService
+
+  properties: {
+    subnetResourceId: integrationSubnetResourceId
+    swiftSupported: true
+  }
+}
+
+
+// --------------------------------------------------
+// Outputs
+// --------------------------------------------------
+
+output backendAppServiceName string = backendAppService.name
+
+output frontendAppServiceName string = frontendAppService.name
 
 output appServicePlanName string = appServicePlan.name

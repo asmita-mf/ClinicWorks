@@ -48,7 +48,9 @@ var storageAccountName = 'st${projectName}${environment}${regionCode}${instance}
 
 var containerName = 'cr-${projectName}-data-${environment}'
 
-var appServiceName = 'app-${projectName}-bicep-${environment}-${regionCode}-${instance}'
+var backendAppServiceName = 'app-${projectName}-bicep-api-${environment}-${regionCode}-${instance}'
+
+var frontendAppServiceName = 'app-${projectName}-bicep-ui-${environment}-${regionCode}-${instance}'
 
 var appServicePlanName = 'asp-${projectName}-${environment}-${regionCode}-${instance}'
 
@@ -111,16 +113,21 @@ module storage './modules/storage.bicep' = {
 // --------------------------------------------------
 
 module appservice './modules/appservice.bicep' = {
+
   name: 'appServiceDeployment'
 
   params: {
-    appServiceName: appServiceName
+
+    backendAppServiceName: backendAppServiceName
+    frontendAppServiceName: frontendAppServiceName
     appServicePlanName: appServicePlanName
     location: location
     tags: commonTags
     appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
     integrationSubnetResourceId: network.outputs.appSubnetId
+
   }
+
 }
 
 // --------------------------------------------------
@@ -220,11 +227,13 @@ module monitoring './modules/monitoring.bicep' = {
     location: location
     tags: commonTags
     alertEmail: 'asmita.mfs@gmail.com'
+
     appServiceResourceId: resourceId(
       'Microsoft.Web/sites',
-      appServiceName
+      backendAppServiceName
     )
-    healthCheckUrl: 'https://${appServiceName}.azurewebsites.net/api/health'
+
+    healthCheckUrl: 'https://${backendAppServiceName}.azurewebsites.net/api/health'
 
     availabilityFailedLocationCount: 2
   }
@@ -329,7 +338,9 @@ output containerName string = storage.outputs.containerName
 
 output storageAccountId string = storage.outputs.storageAccountId
 
-output appServiceName string = appservice.outputs.appServiceName
+output backendAppServiceName string = appservice.outputs.backendAppServiceName
+
+output frontendAppServiceName string = appservice.outputs.frontendAppServiceName
 
 output appServicePlanName string = appservice.outputs.appServicePlanName
 

@@ -144,7 +144,7 @@ stages:
 
   - stage: Function
     displayName: "Function - Build & Deploy"
-    dependsOn: Backend
+    dependsOn: Bicep_WhatIf
 
     jobs:
       - job: DeployFunction
@@ -190,7 +190,7 @@ stages:
 
   - stage: Frontend
     displayName: "Frontend - Build & Deploy"
-    dependsOn: Function
+    dependsOn: Bicep_WhatIf
 
     jobs:
       - job: DeployFrontend
