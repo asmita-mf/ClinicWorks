@@ -84,7 +84,7 @@ stages:
                   --parameters location="Central India" \
                   --parameters postgresAdminUsername=clinicadmin \
                   --parameters postgresAdminPassword="$(postgresAdminPassword)"
-                 
+
   # ============================================================
   # BICEP WHAT-IF
   # ============================================================
@@ -110,9 +110,13 @@ stages:
                 az deployment group what-if \
                   --resource-group $(resourceGroupName) \
                   --template-file $(bicepTemplate) \
-                  --parameters $(bicepParameters) \
-          env:
-            POSTGRES_ADMIN_PASSWORD: $(postgresAdminPassword)
+                  --parameters projectName=clinicworks \
+                  --parameters environment=dev \
+                  --parameters regionCode=ci \
+                  --parameters instance=002 \
+                  --parameters location="Central India" \
+                  --parameters postgresAdminUsername=clinicadmin \
+                  --parameters postgresAdminPassword="$(postgresAdminPassword)"
 
   # ============================================================
   # BICEP DEPLOY
@@ -139,11 +143,14 @@ stages:
                 az deployment group create \
                   --resource-group $(resourceGroupName) \
                   --template-file $(bicepTemplate) \
-                  --parameters $(bicepParameters) \
+                  --parameters projectName=clinicworks \
+                  --parameters environment=dev \
+                  --parameters regionCode=ci \
+                  --parameters instance=002 \
+                  --parameters location="Central India" \
+                  --parameters postgresAdminUsername=clinicadmin \
                   --parameters postgresAdminPassword="$(postgresAdminPassword)"
-          env:
-            POSTGRES_ADMIN_PASSWORD: $(postgresAdminPassword)
-            
+
   # ============================================================
   # BACKEND
   # ============================================================
