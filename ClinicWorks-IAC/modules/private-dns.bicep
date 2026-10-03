@@ -16,6 +16,7 @@ resource privateDnsZone 'Microsoft.Network/privateDnsZones@2024-06-01' = {
 resource privateDnsZoneVnetLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2024-06-01' = {
   name: 'clinicworks-vnet-link'
   parent: privateDnsZone
+  location: 'global'
 
   properties: {
     registrationEnabled: false
