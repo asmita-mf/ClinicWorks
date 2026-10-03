@@ -111,7 +111,8 @@ stages:
                   --resource-group $(resourceGroupName) \
                   --template-file $(bicepTemplate) \
                   --parameters $(bicepParameters) \
-                  --parameters postgresAdminPassword="$(postgresAdminPassword)"
+          env:
+            POSTGRES_ADMIN_PASSWORD: $(postgresAdminPassword)
 
   # ============================================================
   # BICEP DEPLOY
@@ -140,7 +141,9 @@ stages:
                   --template-file $(bicepTemplate) \
                   --parameters $(bicepParameters) \
                   --parameters postgresAdminPassword="$(postgresAdminPassword)"
-
+          env:
+            POSTGRES_ADMIN_PASSWORD: $(postgresAdminPassword)
+            
   # ============================================================
   # BACKEND
   # ============================================================
