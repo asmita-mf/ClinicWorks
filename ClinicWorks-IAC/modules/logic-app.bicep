@@ -18,6 +18,13 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   location: location
   tags: tags
 
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${logicAppIdentityId}': {}
+    }
+  }
+
   properties: {
     state: 'Enabled'
 
@@ -26,12 +33,6 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
       contentVersion: '1.0.0.0'
 
       parameters: {}
-      identity: {
-        type: 'UserAssigned'
-        userAssignedIdentities: {
-          '${logicAppIdentityId}': {}
-        }
-      }
 
       triggers: {
         manual: {
@@ -74,10 +75,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           }
         }
       }
-      
     }
-
-    parameters: {}
   }
 }
 

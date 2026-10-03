@@ -71,7 +71,7 @@ var functionAppName = 'fn-${projectName}-processing-${environment}-${regionCode}
 var functionAppServicePlanName = '${appServicePlanName}-function'
 
 // Key Vault
-var keyVaultName = 'kv-${projectName}-${environment}-${regionCode}-${instance}'
+var keyVaultName = 'kv-${projectName}-${environment}-${instance}'
 
 // Application Insights
 var appInsightsName = 'appi-${projectName}-${environment}-${regionCode}-${instance}'
