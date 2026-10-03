@@ -77,9 +77,14 @@ stages:
                 az deployment group validate \
                   --resource-group $(resourceGroupName) \
                   --template-file $(bicepTemplate) \
-                  --parameters $(bicepParameters) \
+                  --parameters projectName=clinicworks \
+                  --parameters environment=dev \
+                  --parameters regionCode=ci \
+                  --parameters instance=002 \
+                  --parameters location="Central India" \
+                  --parameters postgresAdminUsername=clinicadmin \
                   --parameters postgresAdminPassword="$(postgresAdminPassword)"
-
+                 
   # ============================================================
   # BICEP WHAT-IF
   # ============================================================
