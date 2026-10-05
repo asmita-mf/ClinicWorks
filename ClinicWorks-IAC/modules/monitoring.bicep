@@ -1,8 +1,3 @@
-@description('Application Insights resource ID')
-param appInsightsResourceId string
-
-@description('Log Analytics workspace resource ID')
-param logAnalyticsWorkspaceResourceId string
 
 @description('Application Insights resource name')
 param appInsightsName string
@@ -12,9 +7,6 @@ param logAnalyticsWorkspaceName string
 
 @description('Azure region')
 param location string
-
-@description('Common resource tags')
-param tags object
 
 @description('Email address for Azure Monitor alert notifications')
 param alertEmail string

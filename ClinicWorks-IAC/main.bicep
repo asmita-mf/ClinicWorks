@@ -49,62 +49,45 @@ var commonTags = {
 // RESOURCE NAMES
 // ==================================================
 
-// Storage Account
-// Storage account names must be lowercase and contain
-// only letters and numbers.
 var storageAccountName = 'st${projectName}${environment}${regionCode}${instance}'
 
-// Storage Container
 var containerName = 'cr-${projectName}-data-${environment}'
 
-// Backend App Service
 var backendAppServiceName = 'app-${projectName}-api-${environment}-${regionCode}-${instance}'
 
-// Frontend App Service
 var frontendAppServiceName = 'app-${projectName}-ui-${environment}-${regionCode}-${instance}'
 
-// App Service Plan
 var appServicePlanName = 'asp-${projectName}-${environment}-${regionCode}-${instance}'
 
-// Function App
 var functionAppName = 'fn-${projectName}-processing-${environment}-${regionCode}-${instance}'
 
-// Function App Service Plan
 var functionAppServicePlanName = '${appServicePlanName}-function'
 
-// Key Vault
 var keyVaultName = 'kv-${projectName}-${environment}-${instance}'
 
-// Application Insights
 var appInsightsName = 'appi-${projectName}-${environment}-${regionCode}-${instance}'
 
-// PostgreSQL
 var postgresServerName = 'pg-${projectName}-${environment}-${regionCode}-${instance}'
 
-// Document Intelligence
 var documentIntelligenceName = 'di-${projectName}-${environment}-${regionCode}-${instance}'
 
-// Logic App
 var logicAppName = 'logic-${projectName}-processing-${environment}-${regionCode}-${instance}'
 
-// Virtual Network
 var vnetName = 'vnet-${projectName}-${environment}-${regionCode}-${instance}'
 
-// PostgreSQL Private DNS Zone
 var postgresPrivateDnsZoneName = 'privatelink.postgres.database.azure.com'
 
-// Logic App Managed Identity
 var logicAppIdentityName = 'id-${projectName}-logic-${environment}-${regionCode}-${instance}'
 
-// Function API / Microsoft Graph Application
 var functionApiUniqueName = '${projectName}-${environment}-${regionCode}-${instance}-function-api'
 
 var functionApiDisplayName = '${projectName} Function API (${environment})'
 
 var functionApiIdentifierUri = 'https://${functionAppName}.azurewebsites.net'
 
-// Log Analytics Workspace
 var logAnalyticsWorkspaceName = 'log-${projectName}-${environment}-${regionCode}-${instance}'
+
+var azureBlobConnectionName = 'conn-${projectName}-blob-${environment}-${regionCode}-${instance}'
 
 
 // ==================================================
@@ -122,6 +105,20 @@ module storage './modules/storage.bicep' = {
   }
 }
 
+
+// ==================================================
+// AZURE BLOB API CONNECTION
+// ==================================================
+
+module azureBlobConnection './modules/azure-blob-connection.bicep' = {
+  name: 'azureBlobConnectionDeployment'
+  params: {
+    connectionName: azureBlobConnectionName
+    location: location
+    storageAccountName: storage.outputs.storageAccountName
+    managedIdentityResourceId: logicAppIdentity.outputs.identityId
+  }
+}
 
 // ==================================================
 // NETWORK
@@ -170,13 +167,6 @@ module logicAppIdentity './modules/managed-identity.bicep' = {
 
 // ==================================================
 // APPLICATION INSIGHTS + LOG ANALYTICS
-//
-// This module owns:
-// - Log Analytics Workspace
-// - Application Insights
-//
-// App Service and Function App consume the
-// Application Insights connection string from this module.
 // ==================================================
 
 module appInsights './modules/app-insights.bicep' = {
@@ -193,15 +183,6 @@ module appInsights './modules/app-insights.bicep' = {
 
 // ==================================================
 // APP SERVICE
-//
-// Depends on:
-// - Application Insights
-// - Network
-//
-// Creates:
-// - Backend App Service
-// - Frontend App Service
-// - App Service Plan
 // ==================================================
 
 module appservice './modules/appservice.bicep' = {
@@ -211,21 +192,24 @@ module appservice './modules/appservice.bicep' = {
     backendAppServiceName: backendAppServiceName
     frontendAppServiceName: frontendAppServiceName
     appServicePlanName: appServicePlanName
+
     location: location
     tags: commonTags
 
     appInsightsConnectionString: appInsights.outputs.appInsightsConnectionString
 
     integrationSubnetResourceId: network.outputs.appSubnetId
+
+    // REQUIRED PARAMETERS
+    storageAccountName: storage.outputs.storageAccountName
+    storageContainerName: storage.outputs.containerName
+    keyVaultName: keyVaultName
   }
 }
 
 
 // ==================================================
 // FUNCTION API
-//
-// Creates the application/API registration used by
-// the Function App.
 // ==================================================
 
 module functionApi './modules/function-api.bicep' = {
@@ -240,33 +224,16 @@ module functionApi './modules/function-api.bicep' = {
 
 
 // ==================================================
-// FUNCTION APP
-//
-// Depends on:
-// - Application Insights
-// - Network
-// - Function API
-// - Logic App Managed Identity
+// DOCUMENT INTELLIGENCE
 // ==================================================
 
-module function './modules/function.bicep' = {
-  name: 'functionDeployment'
+module documentIntelligence './modules/document-intelligence.bicep' = {
+  name: 'documentIntelligenceDeployment'
 
   params: {
-    functionAppName: functionAppName
-    appServicePlanName: functionAppServicePlanName
+    resourceName: documentIntelligenceName
     location: location
     tags: commonTags
-
-    appInsightsConnectionString: appInsights.outputs.appInsightsConnectionString
-
-    integrationSubnetResourceId: network.outputs.functionSubnetId
-
-    functionApiClientId: functionApi.outputs.clientId
-
-    functionApiIdentifierUri: functionApiIdentifierUri
-
-    logicAppPrincipalId: logicAppIdentity.outputs.principalId
   }
 }
 
@@ -287,10 +254,41 @@ module keyvault './modules/keyvault.bicep' = {
 
 
 // ==================================================
+// FUNCTION APP
+// ==================================================
+
+module function './modules/function.bicep' = {
+  name: 'functionDeployment'
+
+  params: {
+    functionAppName: functionAppName
+    appServicePlanName: functionAppServicePlanName
+
+    location: location
+    tags: commonTags
+
+    appInsightsConnectionString: appInsights.outputs.appInsightsConnectionString
+
+    integrationSubnetResourceId: network.outputs.functionSubnetId
+
+    functionApiClientId: functionApi.outputs.clientId
+
+    functionApiIdentifierUri: functionApiIdentifierUri
+
+    logicAppPrincipalId: logicAppIdentity.outputs.principalId
+
+    storageAccountName: storage.outputs.storageAccountName
+    storageContainerName: storage.outputs.containerName
+
+    documentIntelligenceEndpoint: documentIntelligence.outputs.documentIntelligenceEndpoint
+
+    keyVaultName: keyVaultName
+  }
+}
+
+
+// ==================================================
 // RBAC - FUNCTION → STORAGE
-//
-// Grants the Function App:
-// Storage Blob Data Contributor
 // ==================================================
 
 resource storageAccountResource 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
@@ -321,9 +319,6 @@ resource storageBlobRoleAssignment 'Microsoft.Authorization/roleAssignments@2022
 
 // ==================================================
 // RBAC - FUNCTION → KEY VAULT
-//
-// Grants the Function App:
-// Key Vault Secrets User
 // ==================================================
 
 resource keyVaultResource 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
@@ -354,10 +349,6 @@ resource keyVaultSecretsUserRoleAssignment 'Microsoft.Authorization/roleAssignme
 
 // ==================================================
 // POSTGRESQL
-//
-// Depends on:
-// - Network
-// - PostgreSQL Private DNS
 // ==================================================
 
 module postgres './modules/postgres.bicep' = {
@@ -368,7 +359,6 @@ module postgres './modules/postgres.bicep' = {
     location: location
 
     administratorLogin: postgresAdminUsername
-
     administratorLoginPassword: postgresAdminPassword
 
     tags: commonTags
@@ -381,26 +371,7 @@ module postgres './modules/postgres.bicep' = {
 
 
 // ==================================================
-// DOCUMENT INTELLIGENCE
-// ==================================================
-
-module documentIntelligence './modules/document-intelligence.bicep' = {
-  name: 'documentIntelligenceDeployment'
-
-  params: {
-    resourceName: documentIntelligenceName
-    location: location
-    tags: commonTags
-  }
-}
-
-
-// ==================================================
 // LOGIC APP
-//
-// Depends on:
-// - Logic App Managed Identity
-// - Function App
 // ==================================================
 
 module logicApp './modules/logic-app.bicep' = {
@@ -408,41 +379,52 @@ module logicApp './modules/logic-app.bicep' = {
 
   params: {
     logicAppName: logicAppName
+
     location: location
+
     tags: commonTags
 
     functionAppName: functionAppName
 
     logicAppIdentityId: logicAppIdentity.outputs.identityId
+
+    azureBlobConnectionId: azureBlobConnection.outputs.connectionId
+
+    azureBlobConnectionName: azureBlobConnection.outputs.connectionName
+
+    storageContainerName: storage.outputs.containerName
+  }
+}
+
+
+// ==================================================
+// RBAC - LOGIC APP → STORAGE
+// ==================================================
+
+resource logicAppStorageBlobRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(
+    storageAccountName,
+    logicAppName,
+    'Logic App Storage Blob Data Contributor'
+  )
+
+  scope: storageAccountResource
+
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
+    )
+
+    principalId: logicApp.outputs.systemAssignedPrincipalId
+
+    principalType: 'ServicePrincipal'
   }
 }
 
 
 // ==================================================
 // MONITORING
-//
-// Depends on:
-// - Application Insights
-// - Log Analytics
-// - Backend App Service
-//
-// This module creates:
-// - Action Group
-// - Availability Test
-// - Availability Alert
-// - CPU Alert
-// - Memory Alert
-// - HTTP 5xx Alert
-// - Application Insights Query Alerts
-// - Function Error Alerts
-// - Document Processing Alerts
-// - Dependency Alerts
-// - Logic App Failure Alert
-//
-// IMPORTANT:
-// Monitoring does NOT create Application Insights or
-// Log Analytics. Those resources are owned by the
-// app-insights.bicep module.
 // ==================================================
 
 module monitoring './modules/monitoring.bicep' = {
@@ -450,13 +432,10 @@ module monitoring './modules/monitoring.bicep' = {
 
   params: {
     appInsightsName: appInsights.outputs.appInsightsName
-    appInsightsResourceId: appInsights.outputs.appInsightsId
 
     logAnalyticsWorkspaceName: appInsights.outputs.logAnalyticsWorkspaceName
-    logAnalyticsWorkspaceResourceId: appInsights.outputs.logAnalyticsWorkspaceId
 
     location: location
-    tags: commonTags
 
     alertEmail: 'asmita.mfs@gmail.com'
 
@@ -473,20 +452,11 @@ module monitoring './modules/monitoring.bicep' = {
 // OUTPUTS
 // ==================================================
 
-// --------------------------------------------------
-// STORAGE
-// --------------------------------------------------
-
 output storageAccountName string = storage.outputs.storageAccountName
 
 output containerName string = storage.outputs.containerName
 
 output storageAccountId string = storage.outputs.storageAccountId
-
-
-// --------------------------------------------------
-// APP SERVICES
-// --------------------------------------------------
 
 output backendAppServiceName string = appservice.outputs.backendAppServiceName
 
@@ -494,44 +464,19 @@ output frontendAppServiceName string = appservice.outputs.frontendAppServiceName
 
 output appServicePlanName string = appservice.outputs.appServicePlanName
 
-
-// --------------------------------------------------
-// FUNCTION
-// --------------------------------------------------
-
 output functionAppName string = function.outputs.functionAppName
 
 output functionApiClientId string = functionApi.outputs.clientId
-
-
-// --------------------------------------------------
-// KEY VAULT
-// --------------------------------------------------
 
 output keyVaultName string = keyvault.outputs.keyVaultName
 
 output keyVaultId string = keyvault.outputs.keyVaultId
 
-
-// --------------------------------------------------
-// APPLICATION INSIGHTS
-// --------------------------------------------------
-
 output appInsightsName string = appInsights.outputs.appInsightsName
-
-
-// --------------------------------------------------
-// POSTGRESQL
-// --------------------------------------------------
 
 output postgresServerName string = postgres.outputs.postgresServerName
 
 output postgresServerId string = postgres.outputs.postgresServerId
-
-
-// --------------------------------------------------
-// DOCUMENT INTELLIGENCE
-// --------------------------------------------------
 
 output documentIntelligenceName string = documentIntelligence.outputs.documentIntelligenceName
 
@@ -539,19 +484,9 @@ output documentIntelligenceId string = documentIntelligence.outputs.documentInte
 
 output documentIntelligenceEndpoint string = documentIntelligence.outputs.documentIntelligenceEndpoint
 
-
-// --------------------------------------------------
-// LOGIC APP
-// --------------------------------------------------
-
 output logicAppName string = logicApp.outputs.logicAppName
 
 output logicAppId string = logicApp.outputs.logicAppId
-
-
-// --------------------------------------------------
-// NETWORK
-// --------------------------------------------------
 
 output vnetName string = network.outputs.vnetName
 

@@ -25,6 +25,28 @@ param functionApiIdentifierUri string
 @description('Principal ID of the Logic App managed identity')
 param logicAppPrincipalId string
 
+@description('Name of the Storage Account used by ClinicWorks')
+param storageAccountName string
+
+@description('Name of the Blob container used by ClinicWorks')
+param storageContainerName string
+
+@description('Document Intelligence endpoint')
+param documentIntelligenceEndpoint string
+
+@description('Name of the Key Vault containing ClinicWorks secrets')
+param keyVaultName string
+
+// --------------------------------------------------
+// Derived values
+// --------------------------------------------------
+
+var keyVaultUrl = 'https://${keyVaultName}.vault.${environment().suffixes.keyvaultDns}'
+var azureWebJobsStorageSecretName = 'AzureWebJobsStorage'
+var documentIntelligenceKeySecretName = 'AZURE-DOCUMENT-INTELLIGENCE-KEY'
+var groqApiKeySecretName = 'GROQ-API-KEY'
+var databaseUrlSecretName = 'DATABASE-URL'
+
 // --------------------------------------------------
 // App Service Plan
 // --------------------------------------------------
@@ -32,7 +54,6 @@ param logicAppPrincipalId string
 resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: appServicePlanName
   location: location
-
   tags: tags
 
   sku: {
@@ -46,18 +67,14 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   }
 }
 
-
 // --------------------------------------------------
 // Function App
 // --------------------------------------------------
 
 resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
   name: functionAppName
-
   location: location
-
   kind: 'functionapp,linux'
-
   tags: tags
 
   identity: {
@@ -71,14 +88,95 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
       linuxFxVersion: 'Python|3.12'
 
       appSettings: [
+        // ------------------------------------------
+        // Azure Functions runtime
+        // ------------------------------------------
         {
-        name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-        value: appInsightsConnectionString
+          name: 'FUNCTIONS_WORKER_RUNTIME'
+          value: 'python'
+        }
+        {
+          name: 'FUNCTIONS_EXTENSION_VERSION'
+          value: '~4'
+        }
+
+        // ------------------------------------------
+        // Storage configuration
+        // ------------------------------------------
+        {
+          name: 'AZURE_STORAGE_ACCOUNT_NAME'
+          value: storageAccountName
+        }
+        {
+          name: 'AZURE_STORAGE_CONTAINER_NAME'
+          value: storageContainerName
+        }
+
+        // ------------------------------------------
+        // AzureWebJobsStorage
+        //
+        // Secret is stored in Key Vault.
+        // ------------------------------------------
+        {
+          name: 'AzureWebJobsStorage'
+          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${azureWebJobsStorageSecretName})'
+        }
+
+        // ------------------------------------------
+        // Document Intelligence
+        // ------------------------------------------
+        {
+          name: 'AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT'
+          value: documentIntelligenceEndpoint
+        }
+        {
+          name: 'AZURE_DOCUMENT_INTELLIGENCE_KEY'
+          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${documentIntelligenceKeySecretName})'
+        }
+
+        // ------------------------------------------
+        // Groq
+        // ------------------------------------------
+        {
+          name: 'GROQ_MODEL'
+          value: 'openai/gpt-oss-120b'
+        }
+        {
+          name: 'GROQ_API_KEY'
+          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${groqApiKeySecretName})'
+        }
+
+        // ------------------------------------------
+        // PostgreSQL
+        // ------------------------------------------
+        {
+          name: 'DATABASE_URL'
+          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${databaseUrlSecretName})'
+        }
+
+        // ------------------------------------------
+        // Key Vault
+        // ------------------------------------------
+        {
+          name: 'KEY_VAULT_URL'
+          value: keyVaultUrl
+        }
+
+        // ------------------------------------------
+        // Application Insights
+        // ------------------------------------------
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: appInsightsConnectionString
         }
       ]
     }
   }
 }
+
+// --------------------------------------------------
+// Function App VNet Integration
+// --------------------------------------------------
 
 resource functionAppVnetIntegration 'Microsoft.Web/sites/networkConfig@2025-03-01' = {
   name: 'virtualNetwork'
@@ -122,6 +220,7 @@ resource functionAuth 'Microsoft.Web/sites/config@2022-09-01' = {
             functionApiClientId
             functionApiIdentifierUri
           ]
+
           defaultAuthorizationPolicy: {
             allowedPrincipals: {
               identities: [
@@ -140,9 +239,11 @@ resource functionAuth 'Microsoft.Web/sites/config@2022-09-01' = {
 }
 
 // --------------------------------------------------
-// Output
+// Outputs
 // --------------------------------------------------
 
 output functionAppName string = functionApp.name
 
 output functionPrincipalId string = functionApp.identity.principalId
+
+output functionAppId string = functionApp.id

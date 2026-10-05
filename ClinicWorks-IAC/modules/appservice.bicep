@@ -22,6 +22,14 @@ param appInsightsConnectionString string
 @description('Resource ID of the subnet used for App Service VNet integration')
 param integrationSubnetResourceId string
 
+@description('Name of the Storage Account used by ClinicWorks')
+param storageAccountName string
+
+@description('Name of the Blob container used by ClinicWorks')
+param storageContainerName string
+
+@description('Name of the Key Vault containing ClinicWorks secrets')
+param keyVaultName string
 
 // --------------------------------------------------
 // App Service Plan
@@ -70,6 +78,22 @@ resource backendAppService 'Microsoft.Web/sites@2024-04-01' = {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: appInsightsConnectionString
         }
+        {
+          name: 'AZURE_STORAGE_ACCOUNT_NAME'
+          value: storageAccountName
+        }
+        {
+          name: 'AZURE_STORAGE_CONTAINER_NAME'
+          value: storageContainerName
+        }
+        {
+          name: 'DATABASE_URL'
+          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=DATABASE-URL)'
+        }
+        {
+          name: 'LOGIC_APP_URL'
+          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=LOGIC-APP-URL)'
+        }
       ]
     }
   }
@@ -112,6 +136,10 @@ resource frontendAppService 'Microsoft.Web/sites@2024-04-01' = {
       appCommandLine: 'python -m streamlit run app/main.py --server.address=0.0.0.0 --server.port=8000'
 
       appSettings: [
+        {
+          name: 'FASTAPI_BASE_URL'
+          value: 'https://${backendAppServiceName}.azurewebsites.net'
+        }
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: appInsightsConnectionString

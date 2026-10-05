@@ -40,6 +40,6 @@ resource blobContainer 'Microsoft.Storage/storageAccounts/blobServices/container
 
 output storageAccountName string = storageAccount.name
 
-output containerName string = blobContainer.name
+output containerName string = containerName
 
 output storageAccountId string = storageAccount.id
