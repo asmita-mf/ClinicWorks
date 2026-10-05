@@ -199,7 +199,7 @@ resource cpuAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
           metricNamespace: 'Microsoft.Web/sites'
           metricName: 'CpuTime'
           operator: 'GreaterThan'
-          timeAggregation: 'Average'
+          timeAggregation: 'Total'
           criterionType: 'StaticThresholdCriterion'
         }
       ]
@@ -240,7 +240,7 @@ resource memoryAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
           metricNamespace: 'Microsoft.Web/sites'
           metricName: 'AverageMemoryWorkingSet'
           operator: 'GreaterThan'
-          timeAggregation: 'Average'
+          timeAggregation: 'Total'
           criterionType: 'StaticThresholdCriterion'
         }
       ]
