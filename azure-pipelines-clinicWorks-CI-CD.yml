@@ -171,8 +171,12 @@ stages:
 
           - script: |
               cd ClinicWorks-Backend
+
               python -m pip install --upgrade pip
-              pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+
+              pip install \
+                -r requirements.txt \
+                --target=".python_packages/lib/site-packages"
             displayName: "Install backend dependencies"
 
           - task: ArchiveFiles@2
@@ -190,6 +194,9 @@ stages:
               appType: "webAppLinux"
               appName: "app-clinicworks-api-dev-ci-002"
               package: "$(Build.ArtifactStagingDirectory)/backend.zip"
+              startUpCommand: "gunicorn -k uvicorn.workers.UvicornWorker app.main:app"
+              appSettings: >
+                -SCM_DO_BUILD_DURING_DEPLOYMENT false
             displayName: "Deploy backend to Azure Web App"
 
   # ============================================================
