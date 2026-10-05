@@ -143,6 +143,10 @@ resource frontendAppServiceVnetIntegration 'Microsoft.Web/sites/networkConfig@20
 
 output backendAppServiceName string = backendAppService.name
 
+output backendAppServiceId string = backendAppService.id
+
 output frontendAppServiceName string = frontendAppService.name
+
+output frontendAppServiceId string = frontendAppService.id
 
 output appServicePlanName string = appServicePlan.name

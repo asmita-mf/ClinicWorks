@@ -1,7 +1,13 @@
-@description('Name of the Application Insights resource')
+@description('Application Insights resource ID')
+param appInsightsResourceId string
+
+@description('Log Analytics workspace resource ID')
+param logAnalyticsWorkspaceResourceId string
+
+@description('Application Insights resource name')
 param appInsightsName string
 
-@description('Name of the Log Analytics workspace')
+@description('Log Analytics workspace resource name')
 param logAnalyticsWorkspaceName string
 
 @description('Azure region')
@@ -22,40 +28,24 @@ param healthCheckUrl string
 @description('Number of geographic locations allowed to fail before availability alert fires')
 param availabilityFailedLocationCount int = 2
 
-
 // ============================================================
-// LOG ANALYTICS WORKSPACE
-// ============================================================
-
-resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
-  name: logAnalyticsWorkspaceName
-  location: location
-  tags: tags
-  properties: {
-    sku: {
-      name: 'PerGB2018'
-    }
-    retentionInDays: 30
-  }
-}
-
-
-// ============================================================
-// APPLICATION INSIGHTS
+// EXISTING MONITORING RESOURCES
+//
+// Application Insights and Log Analytics are created by
+// app-insights.bicep.
+//
+// This module only references them and creates monitoring
+// resources such as alerts, action groups, and availability
+// tests.
 // ============================================================
 
-resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+resource appInsights 'Microsoft.Insights/components@2020-02-02' existing = {
   name: appInsightsName
-  location: location
-  tags: tags
-  kind: 'web'
-
-  properties: {
-    Application_Type: 'web'
-    WorkspaceResourceId: logAnalyticsWorkspace.id
-  }
 }
 
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
+  name: logAnalyticsWorkspaceName
+}
 
 // ============================================================
 // ACTION GROUP
@@ -78,7 +68,6 @@ resource actionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
     ]
   }
 }
-
 
 // ============================================================
 // AVAILABILITY TEST
@@ -105,6 +94,7 @@ resource healthAvailabilityTest 'Microsoft.Insights/webtests@2022-06-15' = {
     // 300 seconds = 5 minutes
     Frequency: 300
 
+    // Maximum response time in seconds
     Timeout: 120
 
     Kind: 'standard'
@@ -146,7 +136,7 @@ resource healthAvailabilityTest 'Microsoft.Insights/webtests@2022-06-15' = {
 // ============================================================
 // AVAILABILITY ALERT
 //
-// Alert when 2 or more locations fail
+// Alert when 2 or more geographic locations fail
 // ============================================================
 
 resource availabilityAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
@@ -181,7 +171,6 @@ resource availabilityAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
     ]
   }
 }
-
 
 // ============================================================
 // CPU ALERT
@@ -228,7 +217,6 @@ resource cpuAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
   }
 }
 
-
 // ============================================================
 // MEMORY ALERT
 //
@@ -274,9 +262,10 @@ resource memoryAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
   }
 }
 
-
 // ============================================================
 // HTTP 5XX ALERT
+//
+// Alert when backend App Service returns HTTP 5xx errors
 // ============================================================
 
 resource http5xxAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
@@ -317,7 +306,6 @@ resource http5xxAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
     ]
   }
 }
-
 
 // ============================================================
 // UNHANDLED EXCEPTIONS
@@ -370,15 +358,15 @@ resource unhandledExceptionAlert 'Microsoft.Insights/scheduledQueryRules@2022-06
   }
 }
 
-
 // ============================================================
 // DEPENDENCY FAILURES
 //
-// Blob Storage
-// PostgreSQL
-// Document Intelligence
-// Groq / AI
-// Other dependencies
+// Covers:
+// - Blob Storage
+// - PostgreSQL
+// - Document Intelligence
+// - Groq / AI
+// - Other dependencies
 // ============================================================
 
 resource dependencyFailureAlert 'Microsoft.Insights/scheduledQueryRules@2022-06-15' = {
@@ -429,13 +417,13 @@ resource dependencyFailureAlert 'Microsoft.Insights/scheduledQueryRules@2022-06-
   }
 }
 
-
 // ============================================================
 // FUNCTION PROCESSING ERRORS
 //
-// Error processing document
-// Processing failed
-// Blob Trigger Error
+// Looks for:
+// - Error processing document
+// - Processing failed
+// - Blob Trigger Error
 // ============================================================
 
 resource functionProcessingErrorAlert 'Microsoft.Insights/scheduledQueryRules@2022-06-15' = {
@@ -487,7 +475,6 @@ resource functionProcessingErrorAlert 'Microsoft.Insights/scheduledQueryRules@20
     autoMitigate: true
   }
 }
-
 
 // ============================================================
 // DOCUMENT FAILED STATUS
@@ -542,7 +529,6 @@ resource documentFailedAlert 'Microsoft.Insights/scheduledQueryRules@2022-06-15'
   }
 }
 
-
 // ============================================================
 // DOCUMENT NEEDS REVIEW
 // ============================================================
@@ -595,13 +581,12 @@ resource documentNeedsReviewAlert 'Microsoft.Insights/scheduledQueryRules@2022-0
   }
 }
 
-
 // ============================================================
 // LOW AI CONFIDENCE
 //
 // Confidence < 80%
 //
-// This assumes the application logs confidence as a numeric
+// Assumes the application logs confidence as a numeric
 // custom property named "confidence_score".
 // ============================================================
 
@@ -654,7 +639,6 @@ resource lowConfidenceAlert 'Microsoft.Insights/scheduledQueryRules@2022-06-15' 
     autoMitigate: true
   }
 }
-
 
 // ============================================================
 // POSTGRESQL CONNECTION FAILURES
@@ -712,7 +696,6 @@ resource postgresConnectionFailureAlert 'Microsoft.Insights/scheduledQueryRules@
   }
 }
 
-
 // ============================================================
 // BLOB STORAGE DEPENDENCY FAILURES
 // ============================================================
@@ -769,7 +752,6 @@ resource blobDependencyFailureAlert 'Microsoft.Insights/scheduledQueryRules@2022
   }
 }
 
-
 // ============================================================
 // DOCUMENT INTELLIGENCE DEPENDENCY FAILURES
 // ============================================================
@@ -825,7 +807,6 @@ resource documentIntelligenceFailureAlert 'Microsoft.Insights/scheduledQueryRule
     autoMitigate: true
   }
 }
-
 
 // ============================================================
 // AI / GROQ DEPENDENCY FAILURES
@@ -885,13 +866,11 @@ resource aiDependencyFailureAlert 'Microsoft.Insights/scheduledQueryRules@2022-0
   }
 }
 
-
 // ============================================================
 // LOGIC APP / ORCHESTRATION ERRORS
-// ============================================================
 //
-// This query assumes Logic App failures are available through
-// the monitored Log Analytics/Application Insights data.
+// This query assumes Logic App diagnostic data is being sent
+// to the Log Analytics workspace.
 // ============================================================
 
 resource logicAppFailureAlert 'Microsoft.Insights/scheduledQueryRules@2022-06-15' = {
@@ -943,14 +922,12 @@ resource logicAppFailureAlert 'Microsoft.Insights/scheduledQueryRules@2022-06-15
   }
 }
 
-
 // ============================================================
 // OUTPUTS
 // ============================================================
 
 output appInsightsName string = appInsights.name
 output appInsightsId string = appInsights.id
-output appInsightsConnectionString string = appInsights.properties.ConnectionString
 
 output logAnalyticsWorkspaceName string = logAnalyticsWorkspace.name
 output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.id
