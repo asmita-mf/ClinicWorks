@@ -40,6 +40,9 @@ steps:
   inputs:
     azureSubscription: 'sc-clinicworks-azure'
     appType: 'webAppLinux'
-    appName: 'app-clinicworks-api-dev-ci-001'
+    appName: 'app-clinicworks-api-dev-ci-002'
     package: '$(Build.ArtifactStagingDirectory)/backend.zip'
+    startUpCommand: "gunicorn -k uvicorn.workers.UvicornWorker app.main:app"
+    appSettings: >
+      -SCM_DO_BUILD_DURING_DEPLOYMENT false
   displayName: 'Deploy backend to Azure Web App'
