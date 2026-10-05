@@ -43,12 +43,12 @@ param keyVaultName string
 
 var keyVaultUrl = 'https://${keyVaultName}.vault.${environment().suffixes.keyvaultDns}'
 var azureWebJobsStorageSecretName = 'AzureWebJobsStorage'
-var documentIntelligenceKeySecretName = 'AZURE-DOCUMENT-INTELLIGENCE-KEY'
-var groqApiKeySecretName = 'GROQ-API-KEY'
-var databaseUrlSecretName = 'DATABASE-URL'
+var documentIntelligenceKeySecretName = 'secret-clinicworks-document-intelligence-endpoint'
+var groqApiKeySecretName = 'secret-clinicworks-groq-api-key'
+var databaseUrlSecretName = 'secret-clinicworks-dbconnection'
 
 // --------------------------------------------------
-// App Service Plan
+// App Service Plan@Microsoft.KeyVault(VaultName=kv-clinicworks-dev-001;SecretName=secret-clinicworks-document-intelligence-endpoint)
 // --------------------------------------------------
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
