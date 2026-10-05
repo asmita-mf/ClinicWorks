@@ -181,34 +181,30 @@ resource availabilityAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
 resource cpuAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
   name: 'alert-${appInsightsName}-cpu-high'
   location: 'global'
-
   properties: {
-    description: 'Alert when backend App Service CPU usage is above 80 percent for 5 minutes'
+    description: 'Alert when backend App Service CPU usage is above 80%.'
     severity: 2
     enabled: true
-
     scopes: [
       appServiceResourceId
     ]
-
     evaluationFrequency: 'PT1M'
     windowSize: 'PT5M'
-
     criteria: {
       'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
-
       allOf: [
         {
-          name: 'HighCpu'
-          criterionType: 'StaticThresholdCriterion'
-          metricName: 'CpuPercentage'
-          operator: 'GreaterThan'
           threshold: 80
+          name: 'HighCPU'
+          metricNamespace: 'Microsoft.Web/sites'
+          metricName: 'CpuTime'
+          operator: 'GreaterThan'
           timeAggregation: 'Average'
+          criterionType: 'StaticThresholdCriterion'
         }
       ]
     }
-
+    autoMitigate: true
     actions: [
       {
         actionGroupId: actionGroup.id
@@ -226,34 +222,30 @@ resource cpuAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
 resource memoryAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
   name: 'alert-${appInsightsName}-memory-high'
   location: 'global'
-
   properties: {
-    description: 'Alert when backend App Service memory usage is above 80 percent for 5 minutes'
+    description: 'Alert when backend App Service memory usage is above the configured threshold.'
     severity: 2
     enabled: true
-
     scopes: [
       appServiceResourceId
     ]
-
     evaluationFrequency: 'PT1M'
     windowSize: 'PT5M'
-
     criteria: {
       'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
-
       allOf: [
         {
+          threshold: 819000000
           name: 'HighMemory'
-          criterionType: 'StaticThresholdCriterion'
-          metricName: 'MemoryPercentage'
+          metricNamespace: 'Microsoft.Web/sites'
+          metricName: 'AverageMemoryWorkingSet'
           operator: 'GreaterThan'
-          threshold: 80
           timeAggregation: 'Average'
+          criterionType: 'StaticThresholdCriterion'
         }
       ]
     }
-
+    autoMitigate: true
     actions: [
       {
         actionGroupId: actionGroup.id
@@ -261,7 +253,6 @@ resource memoryAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
     ]
   }
 }
-
 // ============================================================
 // HTTP 5XX ALERT
 //
@@ -271,34 +262,30 @@ resource memoryAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
 resource http5xxAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
   name: 'alert-${appInsightsName}-http5xx'
   location: 'global'
-
   properties: {
-    description: 'Alert when backend App Service returns HTTP 5xx errors'
+    description: 'Alert when backend App Service returns HTTP 5xx errors.'
     severity: 2
     enabled: true
-
     scopes: [
       appServiceResourceId
     ]
-
     evaluationFrequency: 'PT1M'
     windowSize: 'PT5M'
-
     criteria: {
       'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
-
       allOf: [
         {
+          threshold: 0
           name: 'Http5xxErrors'
-          criterionType: 'StaticThresholdCriterion'
+          metricNamespace: 'Microsoft.Web/sites'
           metricName: 'Http5xx'
           operator: 'GreaterThan'
-          threshold: 0
           timeAggregation: 'Total'
+          criterionType: 'StaticThresholdCriterion'
         }
       ]
     }
-
+    autoMitigate: true
     actions: [
       {
         actionGroupId: actionGroup.id
