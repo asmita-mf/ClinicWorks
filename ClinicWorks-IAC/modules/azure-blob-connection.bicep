@@ -4,15 +4,10 @@ param connectionName string
 @description('Azure region')
 param location string
 
-@description('Storage account name')
-param storageAccountName string
-
-@description('User-assigned managed identity resource ID')
-param managedIdentityResourceId string
-
 resource azureBlobConnection 'Microsoft.Web/connections@2016-06-01' = {
   name: connectionName
   location: location
+  kind: 'V1'
 
   properties: {
     displayName: connectionName
@@ -25,9 +20,9 @@ resource azureBlobConnection 'Microsoft.Web/connections@2016-06-01' = {
       )
     }
 
-    parameterValues: {
-      storageAccountEndpoint: 'https://${storageAccountName}.blob.${environment().suffixes.storage}'
-      managedIdentity: managedIdentityResourceId
+    parameterValueSet: {
+      name: 'managedIdentityAuth'
+      values: {}
     }
   }
 }

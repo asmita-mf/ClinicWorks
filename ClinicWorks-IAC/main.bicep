@@ -87,9 +87,6 @@ var functionApiIdentifierUri = 'https://${functionAppName}.azurewebsites.net'
 
 var logAnalyticsWorkspaceName = 'log-${projectName}-${environment}-${regionCode}-${instance}'
 
-var azureBlobConnectionName = 'conn-${projectName}-blob-${environment}-${regionCode}-${instance}'
-
-
 // ==================================================
 // STORAGE
 // ==================================================
@@ -102,21 +99,6 @@ module storage './modules/storage.bicep' = {
     containerName: containerName
     location: location
     tags: commonTags
-  }
-}
-
-
-// ==================================================
-// AZURE BLOB API CONNECTION
-// ==================================================
-
-module azureBlobConnection './modules/azure-blob-connection.bicep' = {
-  name: 'azureBlobConnectionDeployment'
-  params: {
-    connectionName: azureBlobConnectionName
-    location: location
-    storageAccountName: storage.outputs.storageAccountName
-    managedIdentityResourceId: logicAppIdentity.outputs.identityId
   }
 }
 
@@ -379,49 +361,12 @@ module logicApp './modules/logic-app.bicep' = {
 
   params: {
     logicAppName: logicAppName
-
     location: location
-
     tags: commonTags
-
     functionAppName: functionAppName
-
     logicAppIdentityId: logicAppIdentity.outputs.identityId
-
-    azureBlobConnectionId: azureBlobConnection.outputs.connectionId
-
-    azureBlobConnectionName: azureBlobConnection.outputs.connectionName
-
-    storageContainerName: storage.outputs.containerName
   }
 }
-
-
-// ==================================================
-// RBAC - LOGIC APP → STORAGE
-// ==================================================
-
-resource logicAppStorageBlobRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(
-    storageAccountName,
-    logicAppName,
-    'Logic App Storage Blob Data Contributor'
-  )
-
-  scope: storageAccountResource
-
-  properties: {
-    roleDefinitionId: subscriptionResourceId(
-      'Microsoft.Authorization/roleDefinitions',
-      'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
-    )
-
-    principalId: logicApp.outputs.systemAssignedPrincipalId
-
-    principalType: 'ServicePrincipal'
-  }
-}
-
 
 // ==================================================
 // MONITORING

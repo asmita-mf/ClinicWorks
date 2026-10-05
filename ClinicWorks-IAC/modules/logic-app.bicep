@@ -13,26 +13,22 @@ param functionAppName string
 @description('User-assigned managed identity resource ID')
 param logicAppIdentityId string
 
-@description('Azure Blob API connection resource ID')
-param azureBlobConnectionId string
-
-@description('Azure Blob API connection name')
-param azureBlobConnectionName string
-
-@description('Blob container name')
-param storageContainerName string
-
 
 resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   name: logicAppName
   location: location
   tags: tags
 
-  // System-assigned identity:
-  // Logic App -> Azure Blob connection
+  // ==================================================
+  // IDENTITIES
+  // ==================================================
   //
   // User-assigned identity:
   // Logic App -> Function App
+  //
+  // System-assigned identity:
+  // Available to the Logic App itself if required later.
+  //
   identity: {
     type: 'SystemAssigned, UserAssigned'
 
@@ -50,15 +46,10 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
       contentVersion: '1.0.0.0'
 
       // ==================================================
-      // CONNECTION PARAMETERS
+      // PARAMETERS
       // ==================================================
 
-      parameters: {
-        '$connections': {
-          type: 'Object'
-          defaultValue: {}
-        }
-      }
+      parameters: {}
 
       // ==================================================
       // HTTP TRIGGER
@@ -94,39 +85,6 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
       actions: {
 
         // --------------------------------------------------
-        // CREATE SAS URL
-        // --------------------------------------------------
-
-        createSasUri: {
-          type: 'ApiConnection'
-
-          inputs: {
-            host: {
-              connection: {
-                name: '@parameters(\'$connections\')[\'azureblob\'][\'connectionId\']'
-              }
-            }
-
-            method: 'post'
-
-            path: '/v2/datasets/@{encodeURIComponent(\'AccountNameFromSettings\')}/CreateSharedLinkByPath'
-
-            body: {
-              Permissions: 'Read'
-
-              ExpiryTime: '@formatDateTime(addHours(utcNow(), 1), \'yyyy-MM-ddTHH:mm:ssZ\')'
-
-              AccessProtocol: 'HttpsOnly'
-
-              Path: '@concat(\'${storageContainerName}/\', triggerBody()?[\'blob_name\'])'
-            }
-          }
-
-          runAfter: {}
-        }
-
-
-        // --------------------------------------------------
         // CALL FUNCTION APP
         // --------------------------------------------------
 
@@ -155,11 +113,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             }
           }
 
-          runAfter: {
-            createSasUri: [
-              'Succeeded'
-            ]
-          }
+          runAfter: {}
         }
 
 
@@ -188,34 +142,6 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             callFunction: [
               'Succeeded'
             ]
-          }
-        }
-      }
-    }
-
-    // ==================================================
-    // API CONNECTION REFERENCES
-    // ==================================================
-
-    parameters: {
-      '$connections': {
-        value: {
-          azureblob: {
-            connectionId: azureBlobConnectionId
-
-            connectionName: azureBlobConnectionName
-
-            connectionProperties: {
-              authentication: {
-                type: 'ManagedServiceIdentity'
-              }
-            }
-
-            id: subscriptionResourceId(
-              'Microsoft.Web/locations/managedApis',
-              location,
-              'azureblob'
-            )
           }
         }
       }
