@@ -80,7 +80,7 @@ stages:
                   --parameters projectName=clinicworks \
                   --parameters environment=dev \
                   --parameters regionCode=ci \
-                  --parameters instance=002 \
+                  --parameters instance=003 \
                   --parameters location="Central India" \
                   --parameters postgresAdminUsername=clinicadmin \
                   --parameters postgresAdminPassword="$(postgresAdminPassword)"
@@ -113,7 +113,7 @@ stages:
                   --parameters projectName=clinicworks \
                   --parameters environment=dev \
                   --parameters regionCode=ci \
-                  --parameters instance=002 \
+                  --parameters instance=003 \
                   --parameters location="Central India" \
                   --parameters postgresAdminUsername=clinicadmin \
                   --parameters postgresAdminPassword="$(postgresAdminPassword)"
@@ -146,7 +146,7 @@ stages:
                   --parameters projectName=clinicworks \
                   --parameters environment=dev \
                   --parameters regionCode=ci \
-                  --parameters instance=002 \
+                  --parameters instance=003 \
                   --parameters location="Central India" \
                   --parameters postgresAdminUsername=clinicadmin \
                   --parameters postgresAdminPassword="$(postgresAdminPassword)"
@@ -188,7 +188,7 @@ stages:
             inputs:
               azureSubscription: "$(azureServiceConnection)"
               appType: "webAppLinux"
-              appName: "app-clinicworks-api-dev-ci-002"
+              appName: "app-clinicworks-api-dev-ci-003"
               package: "$(Build.ArtifactStagingDirectory)/backend.zip"
             displayName: "Deploy backend to Azure Web App"
 
@@ -234,7 +234,7 @@ stages:
             inputs:
               azureSubscription: "$(azureServiceConnection)"
               appType: "functionAppLinux"
-              appName: "fn-clinicworks-processing-dev-ci-002"
+              appName: "fn-clinicworks-processing-dev-ci-003"
               package: "$(Build.ArtifactStagingDirectory)/function.zip"
             displayName: "Deploy function to Azure Function App"
 
@@ -285,6 +285,6 @@ stages:
             inputs:
               azureSubscription: "$(azureServiceConnection)"
               appType: "webAppLinux"
-              appName: "app-clinicworks-ui-dev-ci-002"
+              appName: "app-clinicworks-ui-dev-ci-003"
               package: "$(Build.ArtifactStagingDirectory)/frontend.zip"
             displayName: "Deploy frontend to Azure Web App"

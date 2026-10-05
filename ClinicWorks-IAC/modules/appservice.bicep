@@ -69,7 +69,7 @@ resource backendAppService 'Microsoft.Web/sites@2024-04-01' = {
     serverFarmId: appServicePlan.id
 
     siteConfig: {
-      linuxFxVersion: 'PYTHON|3.12'
+      linuxFxVersion: 'PYTHON|3.13'
 
       appCommandLine: 'gunicorn -k uvicorn.workers.UvicornWorker app.main:app'
 
@@ -88,11 +88,11 @@ resource backendAppService 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           name: 'DATABASE_URL'
-          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=DATABASE-URL)'
+          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=secret-clinicworks-dbconnection)'
         }
         {
           name: 'LOGIC_APP_URL'
-          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=LOGIC-APP-URL)'
+          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=secret-clinicworks-logic-app-url)'
         }
       ]
     }
@@ -131,7 +131,7 @@ resource frontendAppService 'Microsoft.Web/sites@2024-04-01' = {
     serverFarmId: appServicePlan.id
 
     siteConfig: {
-      linuxFxVersion: 'PYTHON|3.12'
+      linuxFxVersion: 'PYTHON|3.13'
 
       appCommandLine: 'python -m streamlit run app/main.py --server.address=0.0.0.0 --server.port=8000'
 
