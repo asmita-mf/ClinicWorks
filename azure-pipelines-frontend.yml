@@ -47,5 +47,5 @@ steps:
       appName: "app-clinicworks-ui-dev-ci-002"
       package: "$(Build.ArtifactStagingDirectory)/frontend.zip"
       appSettings: >
-      -SCM_DO_BUILD_DURING_DEPLOYMENT false
+        -SCM_DO_BUILD_DURING_DEPLOYMENT false
     displayName: "Deploy frontend to Azure Web App"
