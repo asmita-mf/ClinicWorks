@@ -80,7 +80,7 @@ stages:
                   --parameters projectName=clinicworks \
                   --parameters environment=dev \
                   --parameters regionCode=ci \
-                  --parameters instance=002 \
+                  --parameters instance=003 \
                   --parameters location="Central India" \
                   --parameters postgresAdminUsername=clinicadmin \
                   --parameters postgresAdminPassword="$(postgresAdminPassword)"
@@ -113,7 +113,7 @@ stages:
                   --parameters projectName=clinicworks \
                   --parameters environment=dev \
                   --parameters regionCode=ci \
-                  --parameters instance=002 \
+                  --parameters instance=003 \
                   --parameters location="Central India" \
                   --parameters postgresAdminUsername=clinicadmin \
                   --parameters postgresAdminPassword="$(postgresAdminPassword)"
@@ -146,7 +146,7 @@ stages:
                   --parameters projectName=clinicworks \
                   --parameters environment=dev \
                   --parameters regionCode=ci \
-                  --parameters instance=002 \
+                  --parameters instance=003 \
                   --parameters location="Central India" \
                   --parameters postgresAdminUsername=clinicadmin \
                   --parameters postgresAdminPassword="$(postgresAdminPassword)"
@@ -188,8 +188,10 @@ stages:
             inputs:
               azureSubscription: "$(azureServiceConnection)"
               appType: "webAppLinux"
-              appName: "app-clinicworks-api-dev-ci-002"
+              appName: "app-clinicworks-api-dev-ci-003"
               package: "$(Build.ArtifactStagingDirectory)/backend.zip"
+              appSettings: >
+                -SCM_DO_BUILD_DURING_DEPLOYMENT false
             displayName: "Deploy backend to Azure Web App"
 
   # ============================================================
@@ -234,7 +236,7 @@ stages:
             inputs:
               azureSubscription: "$(azureServiceConnection)"
               appType: "functionAppLinux"
-              appName: "fn-clinicworks-processing-dev-ci-002"
+              appName: "fn-clinicworks-processing-dev-ci-003"
               package: "$(Build.ArtifactStagingDirectory)/function.zip"
             displayName: "Deploy function to Azure Function App"
 
@@ -253,13 +255,13 @@ stages:
         steps:
           - task: UsePythonVersion@0
             inputs:
-              versionSpec: "3.12"
-            displayName: "Use Python 3.12"
+              versionSpec: "3.13"
+            displayName: "Use Python 3.13"
 
           - script: |
               cd ClinicWorks-Frontend
               python -m pip install --upgrade pip
-              pip install -r requirements.txt
+              pip install -r requirements.txt --target=".python_packages/lib/site-packages"
             displayName: "Install frontend dependencies"
 
           - script: |
@@ -285,6 +287,8 @@ stages:
             inputs:
               azureSubscription: "$(azureServiceConnection)"
               appType: "webAppLinux"
-              appName: "app-clinicworks-ui-dev-ci-002"
+              appName: "app-clinicworks-ui-dev-ci-003"
               package: "$(Build.ArtifactStagingDirectory)/frontend.zip"
+              appSettings: >
+                -SCM_DO_BUILD_DURING_DEPLOYMENT false
             displayName: "Deploy frontend to Azure Web App"

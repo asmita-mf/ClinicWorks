@@ -87,6 +87,8 @@ var functionApiIdentifierUri = 'https://${functionAppName}.azurewebsites.net'
 
 var logAnalyticsWorkspaceName = 'log-${projectName}-${environment}-${regionCode}-${instance}'
 
+var privateDnsZoneName = 'vnet-${projectName}-${environment}-${regionCode}-${instance}-link'
+
 // ==================================================
 // STORAGE
 // ==================================================
@@ -128,6 +130,7 @@ module postgresPrivateDns './modules/private-dns.bicep' = {
     zoneName: postgresPrivateDnsZoneName
     tags: commonTags
     vnetResourceId: network.outputs.vnetId
+    privateDnsZoneName: privateDnsZoneName
   }
 }
 
@@ -169,6 +172,10 @@ module appInsights './modules/app-insights.bicep' = {
 
 module appservice './modules/appservice.bicep' = {
   name: 'appServiceDeployment'
+
+  dependsOn: [
+    keyvault
+  ]
 
   params: {
     backendAppServiceName: backendAppServiceName
@@ -233,7 +240,6 @@ module keyvault './modules/keyvault.bicep' = {
     tags: commonTags
   }
 }
-
 
 // ==================================================
 // FUNCTION APP

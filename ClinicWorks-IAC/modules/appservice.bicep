@@ -65,6 +65,10 @@ resource backendAppService 'Microsoft.Web/sites@2024-04-01' = {
 
   kind: 'app,linux'
 
+  identity: {
+    type: 'SystemAssigned'
+  }
+
   properties: {
     serverFarmId: appServicePlan.id
 
@@ -74,6 +78,10 @@ resource backendAppService 'Microsoft.Web/sites@2024-04-01' = {
       appCommandLine: 'gunicorn -k uvicorn.workers.UvicornWorker app.main:app'
 
       appSettings: [
+        {
+          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
+          value: 'false'
+        }
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: appInsightsConnectionString
@@ -96,6 +104,36 @@ resource backendAppService 'Microsoft.Web/sites@2024-04-01' = {
         }
       ]
     }
+  }
+}
+
+
+// --------------------------------------------------
+// Backend Key Vault Access
+// --------------------------------------------------
+
+resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
+  name: keyVaultName
+}
+
+resource keyVaultSecretsUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(
+    keyVault.id,
+    backendAppService.id,
+    'Key Vault Secrets User'
+  )
+
+  scope: keyVault
+
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '4633458b-17de-408a-b874-0445c86b69e6'
+    )
+
+    principalId: backendAppService.identity.principalId
+
+    principalType: 'ServicePrincipal'
   }
 }
 
@@ -136,6 +174,10 @@ resource frontendAppService 'Microsoft.Web/sites@2024-04-01' = {
       appCommandLine: 'python -m streamlit run app/main.py --server.address=0.0.0.0 --server.port=8000'
 
       appSettings: [
+        {
+          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
+          value: 'false'
+        }
         {
           name: 'FASTAPI_BASE_URL'
           value: 'https://${backendAppServiceName}.azurewebsites.net'
