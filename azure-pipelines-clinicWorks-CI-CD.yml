@@ -174,9 +174,10 @@ stages:
 
               python -m pip install --upgrade pip
 
-              pip install \
-                -r requirements.txt \
-                --target=".python_packages/lib/site-packages"
+              pip install -r requirements.txt
+
+              python -c "import uvicorn; print('uvicorn version:', uvicorn.__version__)"
+              python -c "import gunicorn; print('gunicorn version:', gunicorn.__version__)"
             displayName: "Install backend dependencies"
 
           - task: ArchiveFiles@2
@@ -196,7 +197,7 @@ stages:
               package: "$(Build.ArtifactStagingDirectory)/backend.zip"
               startUpCommand: "gunicorn -k uvicorn.workers.UvicornWorker app.main:app"
               appSettings: >
-                -SCM_DO_BUILD_DURING_DEPLOYMENT false
+                -SCM_DO_BUILD_DURING_DEPLOYMENT true
             displayName: "Deploy backend to Azure Web App"
 
   # ============================================================
@@ -266,7 +267,10 @@ stages:
           - script: |
               cd ClinicWorks-Frontend
               python -m pip install --upgrade pip
-              pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+              pip install -r requirements.txt
+
+              python -c "import uvicorn; print('uvicorn version:', uvicorn.__version__)"
+              python -c "import gunicorn; print('gunicorn version:', gunicorn.__version__)"
             displayName: "Install frontend dependencies"
 
           - script: |
@@ -286,6 +290,9 @@ stages:
           - script: |
               echo "===== Frontend ZIP Contents ====="
               unzip -l "$(Build.ArtifactStagingDirectory)/frontend.zip"
+
+              echo "===== Checking requirements.txt ====="
+              unzip -l "$(Build.ArtifactStagingDirectory)/frontend.zip" | grep requirements.txt
             displayName: "Verify frontend ZIP contents"
 
           - task: AzureWebApp@1
@@ -295,5 +302,5 @@ stages:
               appName: "app-clinicworks-ui-dev-ci-003"
               package: "$(Build.ArtifactStagingDirectory)/frontend.zip"
               appSettings: >
-                -SCM_DO_BUILD_DURING_DEPLOYMENT false
+                -SCM_DO_BUILD_DURING_DEPLOYMENT true
             displayName: "Deploy frontend to Azure Web App"

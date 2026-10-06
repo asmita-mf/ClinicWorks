@@ -42,7 +42,7 @@ param keyVaultName string
 // --------------------------------------------------
 
 var keyVaultUrl = 'https://${keyVaultName}.vault.${environment().suffixes.keyvaultDns}'
-var azureWebJobsStorageSecretName = 'AzureWebJobsStorage'
+var azureWebJobsStorageSecretName = 'azure-webjobs-storage'
 var documentIntelligenceKeySecretName = 'secret-clinicworks-document-intelligence-endpoint'
 var groqApiKeySecretName = 'secret-clinicworks-groq-api-key'
 var databaseUrlSecretName = 'secret-clinicworks-dbconnection'

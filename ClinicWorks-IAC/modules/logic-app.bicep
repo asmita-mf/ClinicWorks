@@ -13,6 +13,12 @@ param functionAppName string
 @description('User-assigned managed identity resource ID')
 param logicAppIdentityId string
 
+@description('Resource ID of the existing Outlook API connection')
+param outlookConnectionId string
+
+@description('Email address that should receive processing failure notifications')
+param notificationEmail string
+
 
 resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   name: logicAppName
@@ -49,7 +55,12 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
       // PARAMETERS
       // ==================================================
 
-      parameters: {}
+      parameters: {
+        '$connections': {
+          type: 'Object'
+          defaultValue: {}
+        }
+      }
 
       // ==================================================
       // HTTP TRIGGER
@@ -118,7 +129,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
 
 
         // --------------------------------------------------
-        // RETURN FUNCTION RESPONSE
+        // SUCCESS RESPONSE
         // --------------------------------------------------
 
         response: {
@@ -142,6 +153,89 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             callFunction: [
               'Succeeded'
             ]
+          }
+        }
+
+
+        // --------------------------------------------------
+        // FAILURE NOTIFICATION
+        // --------------------------------------------------
+
+        sendFailureNotification: {
+          type: 'ApiConnection'
+
+          inputs: {
+            host: {
+              connection: {
+                name: '@parameters(\'$connections\')[\'outlook\'][\'connectionId\']'
+              }
+            }
+
+            method: 'post'
+
+            path: '/v2/Mail'
+
+            body: {
+              To: notificationEmail
+
+              Subject: 'ClinicWorks document processing failed'
+
+              Body: '<p>ClinicWorks document processing failed.</p><p><b>Blob:</b> @{triggerBody()?[\'blob_name\']}</p><p><b>Function:</b> ${functionAppName}</p><p>Please check the Logic App and Function App logs for more details.</p>'
+            }
+          }
+
+          runAfter: {
+            callFunction: [
+              'Failed'
+              'TimedOut'
+            ]
+          }
+        }
+
+
+        // --------------------------------------------------
+        // FAILURE RESPONSE
+        // --------------------------------------------------
+
+        failureResponse: {
+          type: 'Response'
+
+          kind: 'Http'
+
+          inputs: {
+            statusCode: 500
+
+            body: {
+              status: 'Failed'
+
+              blob_name: '@triggerBody()?[\'blob_name\']'
+
+              message: 'Document processing failed. Notification has been sent.'
+            }
+          }
+
+          runAfter: {
+            sendFailureNotification: [
+              'Succeeded'
+            ]
+          }
+        }
+      }
+
+      // ==================================================
+      // CONNECTION REFERENCES
+      // ==================================================
+
+      outputs: {}
+    }
+
+    parameters: {
+      '$connections': {
+        value: {
+          outlook: {
+            connectionId: outlookConnectionId
+            connectionName: 'outlook'
+            id: '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Web/locations/${location}/managedApis/office365'
           }
         }
       }

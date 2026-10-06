@@ -238,6 +238,9 @@ module keyvault './modules/keyvault.bicep' = {
     keyVaultName: keyVaultName
     location: location
     tags: commonTags
+    storageAccountName: storage.outputs.storageAccountName
+    storageAccountId: storage.outputs.storageAccountId
+    azureWebJobsStorageSecretName: 'azure-webjobs-storage'
   }
 }
 
@@ -371,6 +374,10 @@ module logicApp './modules/logic-app.bicep' = {
     tags: commonTags
     functionAppName: functionAppName
     logicAppIdentityId: logicAppIdentity.outputs.identityId
+
+    outlookConnectionId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Web/connections/outlook'
+
+    notificationEmail: 'asmita.mfs@gmail.com'
   }
 }
 
