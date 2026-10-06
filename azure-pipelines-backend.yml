@@ -12,38 +12,38 @@ trigger:
       - ClinicWorks-Backend/**
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: "ubuntu-latest"
 
 steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.13"
+    displayName: "Use Python 3.13"
 
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.13'
-  displayName: 'Use Python 3.13'
+  - script: |
+      cd ClinicWorks-Backend
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+      PYTHONPATH="$(pwd)/.python_packages/lib/site-packages" python -c "import uvicorn; print('uvicorn version:', uvicorn.__version__)"
+      PYTHONPATH="$(pwd)/.python_packages/lib/site-packages" python -c "import gunicorn; print('gunicorn version:', gunicorn.__version__)"
+    displayName: "Install backend dependencies"
 
-- script: |
-    cd ClinicWorks-Backend
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt --target ./python_packages
-  displayName: 'Install backend dependencies'
+  - task: ArchiveFiles@2
+    inputs:
+      rootFolderOrFile: "$(Build.SourcesDirectory)/ClinicWorks-Backend"
+      includeRootFolder: false
+      archiveType: "zip"
+      archiveFile: "$(Build.ArtifactStagingDirectory)/backend.zip"
+      replaceExistingArchive: true
+    displayName: "Package backend"
 
-- task: ArchiveFiles@2
-  inputs:
-    rootFolderOrFile: '$(Build.SourcesDirectory)/ClinicWorks-Backend'
-    includeRootFolder: false
-    archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/backend.zip'
-    replaceExistingArchive: true
-  displayName: 'Package backend'
-
-- task: AzureWebApp@1
-  inputs:
-    azureSubscription: 'sc-clinicworks-azure'
-    appType: 'webAppLinux'
-    appName: 'app-clinicworks-api-dev-ci-003'
-    package: '$(Build.ArtifactStagingDirectory)/backend.zip'
-    startUpCommand: "gunicorn -k uvicorn.workers.UvicornWorker app.main:app"
-    appSettings: >
-      -SCM_DO_BUILD_DURING_DEPLOYMENT true
-      -ENABLE_ORYX_BUILD true
-  displayName: 'Deploy backend to Azure Web App'
+  - task: AzureWebApp@1
+    inputs:
+      azureSubscription: "sc-clinicworks-azure"
+      appType: "webAppLinux"
+      appName: "app-clinicworks-api-dev-ci-005"
+      package: "$(Build.ArtifactStagingDirectory)/backend.zip"
+      startUpCommand: "PYTHONPATH=/home/site/wwwroot/.python_packages/lib/site-packages python -m gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind=0.0.0.0:8000"
+      appSettings: >
+        -SCM_DO_BUILD_DURING_DEPLOYMENT false
+    displayName: "Deploy backend to Azure Web App"

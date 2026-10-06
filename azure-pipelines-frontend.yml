@@ -18,10 +18,10 @@ steps:
   - script: |
       cd ClinicWorks-Frontend
       python -m pip install --upgrade pip
-      pip install -r requirements.txt
+      pip install -r requirements.txt --target=".python_packages/lib/site-packages"
       echo "===== Installed packages ====="
-      pip show streamlit
-      pip show requests
+      PYTHONPATH="$(pwd)/.python_packages/lib/site-packages" python -c "import streamlit; print('streamlit version:', streamlit.__version__)"
+      PYTHONPATH="$(pwd)/.python_packages/lib/site-packages" python -c "import requests; print('requests version:', requests.__version__)"
 
     displayName: "Install frontend dependencies"
 
@@ -48,9 +48,13 @@ steps:
     inputs:
       azureSubscription: "sc-clinicworks-azure"
       appType: "webAppLinux"
-      appName: "app-clinicworks-ui-dev-ci-003"
+      appName: "app-clinicworks-ui-dev-ci-005"
       package: "$(Build.ArtifactStagingDirectory)/frontend.zip"
+      startUpCommand: >
+        PYTHONPATH=/home/site/wwwroot/.python_packages/lib/site-packages
+        python -m streamlit run app/main.py
+        --server.address=0.0.0.0
+        --server.port=8000
       appSettings: >
-        -SCM_DO_BUILD_DURING_DEPLOYMENT true
-        -ENABLE_ORYX_BUILD true
+        -SCM_DO_BUILD_DURING_DEPLOYMENT false
     displayName: "Deploy frontend to Azure Web App"

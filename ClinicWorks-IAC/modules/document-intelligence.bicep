@@ -27,3 +27,6 @@ resource documentIntelligence 'Microsoft.CognitiveServices/accounts@2023-05-01' 
 output documentIntelligenceName string = documentIntelligence.name
 output documentIntelligenceId string = documentIntelligence.id
 output documentIntelligenceEndpoint string = documentIntelligence.properties.endpoint
+
+@secure()
+output documentIntelligenceKey string = documentIntelligence.listKeys().key1

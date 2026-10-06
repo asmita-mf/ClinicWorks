@@ -75,7 +75,7 @@ resource backendAppService 'Microsoft.Web/sites@2024-04-01' = {
     siteConfig: {
       linuxFxVersion: 'PYTHON|3.13'
 
-      appCommandLine: 'gunicorn -k uvicorn.workers.UvicornWorker app.main:app'
+      appCommandLine: 'PYTHONPATH=/home/site/wwwroot/.python_packages/lib/site-packages python -m gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind=0.0.0.0:8000'
 
       appSettings: [
         {
@@ -171,7 +171,7 @@ resource frontendAppService 'Microsoft.Web/sites@2024-04-01' = {
     siteConfig: {
       linuxFxVersion: 'PYTHON|3.13'
 
-      appCommandLine: 'python -m streamlit run app/main.py --server.address=0.0.0.0 --server.port=8000'
+      appCommandLine: 'PYTHONPATH=/home/site/wwwroot/.python_packages/lib/site-packages python -m streamlit run app/main.py --server.address=0.0.0.0 --server.port=8000'
 
       appSettings: [
         {
@@ -214,6 +214,8 @@ resource frontendAppServiceVnetIntegration 'Microsoft.Web/sites/networkConfig@20
 output backendAppServiceName string = backendAppService.name
 
 output backendAppServiceId string = backendAppService.id
+
+output backendPrincipalId string = backendAppService.identity.principalId
 
 output frontendAppServiceName string = frontendAppService.name
 

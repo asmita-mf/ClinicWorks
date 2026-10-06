@@ -33,6 +33,9 @@ param postgresAdminUsername string
 @description('PostgreSQL administrator password')
 param postgresAdminPassword string
 
+@description('Optional user object ID that should receive Key Vault Secrets Officer on the Key Vault. Leave empty to skip.')
+param keyVaultOfficerUserObjectId string = ''
+
 
 // ==================================================
 // COMMON TAGS
@@ -241,6 +244,7 @@ module keyvault './modules/keyvault.bicep' = {
     storageAccountName: storage.outputs.storageAccountName
     storageAccountId: storage.outputs.storageAccountId
     azureWebJobsStorageSecretName: 'azure-webjobs-storage'
+    documentIntelligenceKey: documentIntelligence.outputs.documentIntelligenceKey
   }
 }
 
@@ -250,6 +254,10 @@ module keyvault './modules/keyvault.bicep' = {
 
 module function './modules/function.bicep' = {
   name: 'functionDeployment'
+
+  dependsOn: [
+    keyvault
+  ]
 
   params: {
     functionAppName: functionAppName
@@ -309,6 +317,32 @@ resource storageBlobRoleAssignment 'Microsoft.Authorization/roleAssignments@2022
 
 
 // ==================================================
+// RBAC - BACKEND APP SERVICE → STORAGE
+// ==================================================
+
+resource backendStorageBlobRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(
+    storageAccountName,
+    backendAppServiceName,
+    'Storage Blob Data Contributor'
+  )
+
+  scope: storageAccountResource
+
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
+    )
+
+    principalId: appservice.outputs.backendPrincipalId
+
+    principalType: 'ServicePrincipal'
+  }
+}
+
+
+// ==================================================
 // RBAC - FUNCTION → KEY VAULT
 // ==================================================
 
@@ -317,6 +351,10 @@ resource keyVaultResource 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
 }
 
 resource keyVaultSecretsUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  dependsOn: [
+    keyvault
+  ]
+
   name: guid(
     keyVaultName,
     functionAppName,
@@ -334,6 +372,31 @@ resource keyVaultSecretsUserRoleAssignment 'Microsoft.Authorization/roleAssignme
     principalId: function.outputs.functionPrincipalId
 
     principalType: 'ServicePrincipal'
+  }
+}
+
+resource keyVaultSecretsOfficerRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(keyVaultOfficerUserObjectId)) {
+  dependsOn: [
+    keyvault
+  ]
+
+  name: guid(
+    keyVaultName,
+    keyVaultOfficerUserObjectId,
+    'Key Vault Secrets Officer'
+  )
+
+  scope: keyVaultResource
+
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
+    )
+
+    principalId: keyVaultOfficerUserObjectId
+
+    principalType: 'User'
   }
 }
 

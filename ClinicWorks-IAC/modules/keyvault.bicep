@@ -16,6 +16,13 @@ param storageAccountId string
 @description('Name of the AzureWebJobsStorage secret in Key Vault')
 param azureWebJobsStorageSecretName string = 'azure-webjobs-storage'
 
+@secure()
+@description('Document Intelligence API key to store in Key Vault')
+param documentIntelligenceKey string
+
+@description('Name of the Document Intelligence API key secret in Key Vault')
+param documentIntelligenceKeySecretName string = 'secret-clinicworks-document-intelligence-endpoint'
+
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultName
@@ -45,7 +52,9 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
 // string securely in Key Vault.
 // ------------------------------------------
 
-var storageConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${listKeys(storageAccountId, '2023-01-01').keys[0].value};EndpointSuffix=core.windows.net'
+var storageEndpointSuffix = environment().suffixes.storage
+var storageAccountKey = listKeys(storageAccountId, '2023-05-01').keys[0].value
+var storageConnectionString = 'DefaultEndpointsProtocol=https;EndpointSuffix=${storageEndpointSuffix};AccountName=${storageAccountName};AccountKey=${storageAccountKey};BlobEndpoint=https://${storageAccountName}.blob.${storageEndpointSuffix}/;FileEndpoint=https://${storageAccountName}.file.${storageEndpointSuffix}/;QueueEndpoint=https://${storageAccountName}.queue.${storageEndpointSuffix}/;TableEndpoint=https://${storageAccountName}.table.${storageEndpointSuffix}/'
 
 resource azureWebJobsStorageSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: keyVault
@@ -53,6 +62,15 @@ resource azureWebJobsStorageSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01
 
   properties: {
     value: storageConnectionString
+  }
+}
+
+resource documentIntelligenceKeySecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: documentIntelligenceKeySecretName
+
+  properties: {
+    value: documentIntelligenceKey
   }
 }
 
