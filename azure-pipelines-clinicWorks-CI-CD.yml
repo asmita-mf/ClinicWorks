@@ -80,7 +80,7 @@ stages:
                   --parameters projectName=clinicworks \
                   --parameters environment=dev \
                   --parameters regionCode=ci \
-                  --parameters instance=003 \
+                  --parameters instance=002 \
                   --parameters location="Central India" \
                   --parameters postgresAdminUsername=clinicadmin \
                   --parameters postgresAdminPassword="$(postgresAdminPassword)"
@@ -113,7 +113,7 @@ stages:
                   --parameters projectName=clinicworks \
                   --parameters environment=dev \
                   --parameters regionCode=ci \
-                  --parameters instance=003 \
+                  --parameters instance=002 \
                   --parameters location="Central India" \
                   --parameters postgresAdminUsername=clinicadmin \
                   --parameters postgresAdminPassword="$(postgresAdminPassword)"
@@ -146,7 +146,7 @@ stages:
                   --parameters projectName=clinicworks \
                   --parameters environment=dev \
                   --parameters regionCode=ci \
-                  --parameters instance=003 \
+                  --parameters instance=002 \
                   --parameters location="Central India" \
                   --parameters postgresAdminUsername=clinicadmin \
                   --parameters postgresAdminPassword="$(postgresAdminPassword)"
@@ -193,7 +193,7 @@ stages:
             inputs:
               azureSubscription: "$(azureServiceConnection)"
               appType: "webAppLinux"
-              appName: "app-clinicworks-api-dev-ci-003"
+              appName: "app-clinicworks-api-dev-ci-002"
               package: "$(Build.ArtifactStagingDirectory)/backend.zip"
               startUpCommand: "gunicorn -k uvicorn.workers.UvicornWorker app.main:app"
               appSettings: >
@@ -242,7 +242,7 @@ stages:
             inputs:
               azureSubscription: "$(azureServiceConnection)"
               appType: "functionAppLinux"
-              appName: "fn-clinicworks-processing-dev-ci-003"
+              appName: "fn-clinicworks-processing-dev-ci-002"
               package: "$(Build.ArtifactStagingDirectory)/function.zip"
             displayName: "Deploy function to Azure Function App"
 
@@ -266,16 +266,18 @@ stages:
 
           - script: |
               cd ClinicWorks-Frontend
+
               python -m pip install --upgrade pip
+
               pip install -r requirements.txt
 
-              python -c "import uvicorn; print('uvicorn version:', uvicorn.__version__)"
-              python -c "import gunicorn; print('gunicorn version:', gunicorn.__version__)"
-            displayName: "Install frontend dependencies"
+            displayName: "Validate frontend dependencies"
 
           - script: |
               cd ClinicWorks-Frontend
+
               python -m py_compile app/main.py
+
             displayName: "Validate frontend code"
 
           - task: ArchiveFiles@2
@@ -285,22 +287,28 @@ stages:
               archiveType: "zip"
               archiveFile: "$(Build.ArtifactStagingDirectory)/frontend.zip"
               replaceExistingArchive: true
+
             displayName: "Package frontend"
 
           - script: |
               echo "===== Frontend ZIP Contents ====="
               unzip -l "$(Build.ArtifactStagingDirectory)/frontend.zip"
 
-              echo "===== Checking requirements.txt ====="
-              unzip -l "$(Build.ArtifactStagingDirectory)/frontend.zip" | grep requirements.txt
             displayName: "Verify frontend ZIP contents"
 
           - task: AzureWebApp@1
             inputs:
-              azureSubscription: "$(azureServiceConnection)"
+              azureSubscription: "sc-clinicworks-azure"
               appType: "webAppLinux"
-              appName: "app-clinicworks-ui-dev-ci-003"
+              appName: "app-clinicworks-ui-dev-ci-002"
               package: "$(Build.ArtifactStagingDirectory)/frontend.zip"
+
+              startUpCommand: >
+                python -m streamlit run app/main.py
+                --server.address=0.0.0.0
+                --server.port=8000
+
               appSettings: >
                 -SCM_DO_BUILD_DURING_DEPLOYMENT true
+
             displayName: "Deploy frontend to Azure Web App"
