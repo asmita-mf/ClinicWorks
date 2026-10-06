@@ -18,7 +18,7 @@ steps:
   - script: |
       cd ClinicWorks-Frontend
       python -m pip install --upgrade pip
-      pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+      pip install -r requirements.txt
     displayName: "Install frontend dependencies"
 
   - script: |
@@ -47,5 +47,5 @@ steps:
       appName: "app-clinicworks-ui-dev-ci-003"
       package: "$(Build.ArtifactStagingDirectory)/frontend.zip"
       appSettings: >
-        -SCM_DO_BUILD_DURING_DEPLOYMENT false
+        -SCM_DO_BUILD_DURING_DEPLOYMENT true
     displayName: "Deploy frontend to Azure Web App"
