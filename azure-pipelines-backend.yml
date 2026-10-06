@@ -24,7 +24,7 @@ steps:
 - script: |
     cd ClinicWorks-Backend
     python -m pip install --upgrade pip
-    pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+    pip install -r requirements.txt
   displayName: 'Install backend dependencies'
 
 - task: ArchiveFiles@2
@@ -44,5 +44,6 @@ steps:
     package: '$(Build.ArtifactStagingDirectory)/backend.zip'
     startUpCommand: "gunicorn -k uvicorn.workers.UvicornWorker app.main:app"
     appSettings: >
-      -SCM_DO_BUILD_DURING_DEPLOYMENT false
+      -SCM_DO_BUILD_DURING_DEPLOYMENT true
+      -ENABLE_ORYX_BUILD true
   displayName: 'Deploy backend to Azure Web App'
