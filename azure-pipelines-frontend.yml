@@ -19,6 +19,10 @@ steps:
       cd ClinicWorks-Frontend
       python -m pip install --upgrade pip
       pip install -r requirements.txt
+      echo "===== Installed packages ====="
+      pip show streamlit
+      pip show requests
+
     displayName: "Install frontend dependencies"
 
   - script: |
@@ -48,4 +52,5 @@ steps:
       package: "$(Build.ArtifactStagingDirectory)/frontend.zip"
       appSettings: >
         -SCM_DO_BUILD_DURING_DEPLOYMENT true
+        -ENABLE_ORYX_BUILD true
     displayName: "Deploy frontend to Azure Web App"
