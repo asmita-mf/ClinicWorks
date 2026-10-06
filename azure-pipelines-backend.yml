@@ -40,7 +40,7 @@ steps:
   inputs:
     azureSubscription: 'sc-clinicworks-azure'
     appType: 'webAppLinux'
-    appName: 'app-clinicworks-api-dev-ci-002'
+    appName: 'app-clinicworks-api-dev-ci-003'
     package: '$(Build.ArtifactStagingDirectory)/backend.zip'
     startUpCommand: "gunicorn -k uvicorn.workers.UvicornWorker app.main:app"
     appSettings: >

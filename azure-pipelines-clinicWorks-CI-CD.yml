@@ -271,7 +271,8 @@ stages:
 
               pip install -r requirements.txt
 
-            displayName: "Validate frontend dependencies"
+              python -c "import streamlit; print('streamlit version:', streamlit.__version__)"
+            displayName: "Install frontend dependencies"
 
           - script: |
               cd ClinicWorks-Frontend
