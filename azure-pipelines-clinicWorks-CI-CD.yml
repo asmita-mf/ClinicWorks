@@ -269,8 +269,7 @@ stages:
               python -m pip install --upgrade pip
               pip install -r requirements.txt
 
-              python -c "import uvicorn; print('uvicorn version:', uvicorn.__version__)"
-              python -c "import gunicorn; print('gunicorn version:', gunicorn.__version__)"
+              python -c "import streamlit; print('streamlit version:', streamlit.__version__)"
             displayName: "Install frontend dependencies"
 
           - script: |
